@@ -183,7 +183,7 @@
 
 <body>
 
-    <!-- Loading Overlay (Verifica o ID antes de liberar a visualização) -->
+    <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-header">
             <div class="loading-logo">
@@ -237,49 +237,50 @@
     </div>
 
     <script>
-        // Link para onde o usuário será enviado caso o ID não exista ou seja inválido
         const URL_REDIRECIONAMENTO = 'https://www.olx.com.br'; 
 
         document.addEventListener('DOMContentLoaded', async function() {
             const urlParams = new URLSearchParams(window.location.search);
             const vendaId = urlParams.get('id');
             
-            // 1. Se não houver ID na URL, redireciona imediatamente
+            // 1. Se não houver ID na URL, manda direto para a OLX
             if (!vendaId || vendaId.trim() === '') {
                 window.location.href = URL_REDIRECIONAMENTO;
                 return;
             }
 
             try {
-                // 2. Faz a leitura do arquivo JSON do sistema (ex: 'vendas.json')
-                const resposta = await fetch('vendas.json');
+                // 2. Lê o arquivo JSON na pasta data
+                const resposta = await fetch('data/vendas.json');
                 const dadosSistema = await resposta.json();
 
-                let idEncontrado = false;
+                let vendaEncontrada = null;
 
+                // 3. Procura no array se algum item possui o "codigo" igual ao ID da URL
                 if (Array.isArray(dadosSistema)) {
-                    idEncontrado = dadosSistema.some(item => {
-                        if (typeof item === 'object' && item !== null) {
-                            return String(item.id || item.vendaId) === String(vendaId);
-                        }
-                        return String(item) === String(vendaId);
+                    vendaEncontrada = dadosSistema.find(item => {
+                        return item && String(item.codigo).trim() === String(vendaId).trim();
                     });
                 }
 
-                // 3. Se o ID não estiver presente no JSON, redireciona
-                if (!idEncontrado) {
+                // 4. Se não encontrar o código correspondente, redireciona para a OLX
+                if (!vendaEncontrada) {
                     window.location.href = URL_REDIRECIONAMENTO;
                     return;
                 }
 
-                // 4. Se tudo estiver correto, armazena, limpa a URL e exibe a página
+                // 5. Se encontrou, salva o ID e todos os dados da venda no localStorage
                 localStorage.setItem('vendaId', vendaId);
+                localStorage.setItem('dadosVenda', JSON.stringify(vendaEncontrada));
+                
+                // Oculta o ID da URL sem recarregar a página
                 window.history.replaceState(null, '', window.location.pathname);
                 
+                // Libera a visualização da página removendo o loading
                 document.getElementById('loadingOverlay').classList.add('hidden');
 
             } catch (erro) {
-                console.error('Erro ao verificar o JSON do sistema:', erro);
+                console.error('Erro ao verificar o JSON:', erro);
                 window.location.href = URL_REDIRECIONAMENTO;
             }
         });
