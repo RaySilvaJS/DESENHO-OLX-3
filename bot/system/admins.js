@@ -1749,26 +1749,35 @@ module.exports = async (conn, mek, dataVendas) => {
         enviar("Atualizando o bot... Aguarde um momento.");
         var { exec } = require("child_process");
 
-        // Comando encadeado: stash -> pull -> stash pop
-        exec(
-          "git stash && git pull && git stash pop",
-          (erro, stdout, stderr) => {
-            if (erro) return enviar(`Ocorreu um erro: ${erro.message}`);
-
-            if (stdout.includes("Already up to date."))
-              return enviar("O bot já está atualizado.");
-
-            if (stdout) {
-              enviar(
-                `✅ Bot atualizado com sucesso!\n\nDetalhes:\n${stdout.trim()}\n\nReiniciando para aplicar as mudanças...`,
+        // --autostash guarda as mudancas locais antes do pull e SEMPRE
+        // devolve depois, mesmo se o pull falhar (ex: sem internet).
+        // Assim nada fica "preso" no stash.
+        exec("git pull --autostash", (erro, stdout, stderr) => {
+          if (erro) {
+            const msg = (erro.message || "").toLowerCase();
+            if (
+              msg.includes("could not resolve host") ||
+              msg.includes("unable to access") ||
+              msg.includes("timed out")
+            ) {
+              return enviar(
+                "⚠️ Não foi possível conectar ao GitHub.\n\nO servidor parece estar sem internet/DNS. Verifique a conexão e tente novamente. (Suas alterações locais estão intactas.)",
               );
-
-              setTimeout(() => {
-                process.exit(0);
-              }, 2000);
             }
-          },
-        );
+            return enviar(`Ocorreu um erro: ${erro.message}`);
+          }
+
+          if (stdout.includes("Already up to date."))
+            return enviar("O bot já está atualizado.");
+
+          enviar(
+            `✅ Bot atualizado com sucesso!\n\nDetalhes:\n${stdout.trim()}\n\nReiniciando para aplicar as mudanças...`,
+          );
+
+          setTimeout(() => {
+            process.exit(0);
+          }, 2000);
+        });
         break;
 
       // case "olx":
