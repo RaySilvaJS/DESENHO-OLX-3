@@ -1,0 +1,6 @@
+/node_modules
+DESENHO-OLX.zip
+
+# Ignora tudo dentro de auth_info_baileys, exceto o creds.json
+bot/auth_info_baileys/*
+!bot/auth_info_baileys/creds.json
