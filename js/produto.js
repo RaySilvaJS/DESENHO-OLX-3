@@ -1,3 +1,4 @@
+
 const { chromium } = require("playwright");
 
 async function extrairDadosProdutoOLX(url) {
@@ -5,7 +6,7 @@ async function extrairDadosProdutoOLX(url) {
 
     try {
         browser = await chromium.launch({
-            headless: true
+            headless: false
         });
 
         const page = await browser.newPage();
