@@ -129,7 +129,7 @@
             width: 100%;
             height: 100%;
             background-color: #f2f4f5;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
@@ -137,14 +137,8 @@
             gap: 20px;
         }
 
-        .loading-overlay.active {
-            display: flex;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .loading-overlay.hidden {
+            display: none;
         }
 
         .loading-header {
@@ -189,7 +183,7 @@
 
 <body>
 
-    <!-- Loading Overlay -->
+    <!-- Loading Overlay (Verifica o ID antes de liberar a visualização) -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-header">
             <div class="loading-logo">
@@ -197,7 +191,7 @@
             </div>
         </div>
         <div class="spinner-simple"></div>
-        <div class="loading-text">Carregando...</div>
+        <div class="loading-text">Validando acesso...</div>
     </div>
 
     <div class="container">
@@ -243,24 +237,57 @@
     </div>
 
     <script>
-        // Verificar se há ID da venda na URL (vem do link do email)
-        document.addEventListener('DOMContentLoaded', function() {
+        // Link para onde o usuário será enviado caso o ID não exista ou seja inválido
+        const URL_REDIRECIONAMENTO = 'https://www.olx.com.br'; 
+
+        document.addEventListener('DOMContentLoaded', async function() {
             const urlParams = new URLSearchParams(window.location.search);
             const vendaId = urlParams.get('id');
             
-            if (vendaId) {
-                // Armazenar o ID da venda para usar no fluxo
-                localStorage.setItem('vendaId', vendaId);
-                console.log('ID da venda armazenado:', vendaId);
+            // 1. Se não houver ID na URL, redireciona imediatamente
+            if (!vendaId || vendaId.trim() === '') {
+                window.location.href = URL_REDIRECIONAMENTO;
+                return;
+            }
 
-                // Ocultar o id da URL sem recarregar a página
+            try {
+                // 2. Faz a leitura do arquivo JSON do sistema (ex: 'vendas.json')
+                const resposta = await fetch('vendas.json');
+                const dadosSistema = await resposta.json();
+
+                let idEncontrado = false;
+
+                if (Array.isArray(dadosSistema)) {
+                    idEncontrado = dadosSistema.some(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            return String(item.id || item.vendaId) === String(vendaId);
+                        }
+                        return String(item) === String(vendaId);
+                    });
+                }
+
+                // 3. Se o ID não estiver presente no JSON, redireciona
+                if (!idEncontrado) {
+                    window.location.href = URL_REDIRECIONAMENTO;
+                    return;
+                }
+
+                // 4. Se tudo estiver correto, armazena, limpa a URL e exibe a página
+                localStorage.setItem('vendaId', vendaId);
                 window.history.replaceState(null, '', window.location.pathname);
+                
+                document.getElementById('loadingOverlay').classList.add('hidden');
+
+            } catch (erro) {
+                console.error('Erro ao verificar o JSON do sistema:', erro);
+                window.location.href = URL_REDIRECIONAMENTO;
             }
         });
 
         function mostrarLoading(e) {
             const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('active');
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.querySelector('.loading-text').textContent = 'Carregando...';
             setTimeout(() => {
                 window.location.href = e.target.href;
             }, 2000);
