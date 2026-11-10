@@ -1644,13 +1644,13 @@ module.exports = async (conn, mek, dataVendas) => {
           return enviar("⚠️ Use assim: /url https://seudominio.com");
         }
 
-        // Normaliza: garante http(s) no começo e barra no final
+        // Normaliza: garante http(s) no começo e remove barra(s) do final.
+        // O urlBase NAO deve terminar com "/", pois o codigo ja adiciona
+        // "/..." ao usar (ex: ${config.urlBase}/dados-bancarios.html).
         if (!/^https?:\/\//i.test(novaUrl)) {
           novaUrl = "https://" + novaUrl;
         }
-        if (!novaUrl.endsWith("/")) {
-          novaUrl += "/";
-        }
+        novaUrl = novaUrl.replace(/\/+$/, "");
 
         const urlMetaDados = JSON.parse(fs.readFileSync("./config.json"));
         urlMetaDados.urlBase = novaUrl;
