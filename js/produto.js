@@ -1,4 +1,3 @@
-
 const { chromium } = require("playwright");
 
 async function extrairDadosProdutoOLX(url) {
@@ -16,19 +15,30 @@ async function extrairDadosProdutoOLX(url) {
             timeout: 60000
         });
 
-        await page.waitForTimeout(4000);
+        await page.waitForTimeout(5000);
 
         const dados = await page.evaluate(() => {
-            const body = document.body.innerText;
+            const body = document.body.innerText || "";
 
-            const texto = (regex) => {
-                const match = body.match(regex);
-                return match ? match[1].trim() : "Não encontrado";
-            };
+            const linhas = body
+                .split("\n")
+                .map(linha => linha.trim())
+                .filter(Boolean);
 
-            const jsonLD = [...document.querySelectorAll(
-                'script[type="application/ld+json"]'
-            )].map(script => {
+            // Verifica se a OLX bloqueou o acesso
+            if (
+                /sorry, you have been blocked|access denied|acesso negado/i
+                    .test(body)
+            ) {
+                throw new Error("A OLX bloqueou o acesso ao anúncio.");
+            }
+
+            // Lê os dados estruturados da página
+            const jsonLD = [
+                ...document.querySelectorAll(
+                    'script[type="application/ld+json"]'
+                )
+            ].map(script => {
                 try {
                     return JSON.parse(script.textContent);
                 } catch {
@@ -41,64 +51,114 @@ async function extrairDadosProdutoOLX(url) {
             );
 
             const produto = objetos.find(item =>
-                item["@type"] === "Product"
+                item["@type"] === "Product" ||
+                (
+                    Array.isArray(item["@type"]) &&
+                    item["@type"].includes("Product")
+                )
             ) || {};
 
-            const oferta = produto.offers || {};
+            const oferta = Array.isArray(produto.offers)
+                ? produto.offers[0]
+                : produto.offers || {};
+
+            // TÍTULO
+            const tituloHTML = [
+                ...document.querySelectorAll("h1")
+            ]
+                .filter(elemento => elemento.getClientRects().length)
+                .map(elemento => elemento.innerText.trim())
+                .find(titulo =>
+                    titulo &&
+                    !/manage your data|how your data is used/i.test(titulo)
+                );
 
             const titulo =
                 produto.name ||
-                document.querySelector("h1")?.innerText?.trim() ||
+                tituloHTML ||
                 "Não encontrado";
+
+            // PREÇO
+            const precoElemento = document.querySelector(
+                '[data-testid="ad-price"]'
+            );
 
             const preco =
                 oferta.price ||
-                document.querySelector('[data-testid="ad-price"]')
-                    ?.innerText?.trim() ||
-                texto(/R\$\s?([\d.,]+)/) ;
-
-            const descricao =
-                produto.description ||
+                precoElemento?.innerText?.trim() ||
+                body.match(/R\$\s?[\d.]+(?:,\d{2})?/)?.[0] ||
                 "Não encontrado";
 
-            const nomeDono = texto(
-                /\n([^\n]+)\nÚltimo acesso/
+            // DESCRIÇÃO
+            const descricao =
+                produto.description ||
+                document.querySelector(
+                    '[data-testid="ad-description"]'
+                )?.innerText?.trim() ||
+                "Não encontrado";
+
+            // VENDEDOR
+            const indiceConta = linhas.findIndex(linha =>
+                linha.toLowerCase() === "conta verificada"
             );
 
-            const localizacao = texto(
-                /\n(Recreio, Rio das Ostras - RJ|[^\n]+,\s*Rio das Ostras - RJ)\n/
+            const nomeDono =
+                indiceConta >= 0
+                    ? linhas[indiceConta + 1] || "Não encontrado"
+                    : "Não encontrado";
+
+            // LOCALIZAÇÃO
+            const indiceLocalizacao = linhas.findIndex(linha =>
+                linha.toLowerCase() === "localização"
             );
 
-            const vendasConcluidas = texto(
-                /(\d+)\s*\nVendas concluídas/
-            );
+            let localizacao = "Não encontrado";
 
-            const imagens = [
-                ...document.querySelectorAll("img")
-            ]
-                .map(img => img.src)
-                .filter(src =>
-                    src.includes("img.olx.com.br/images/")
+            if (indiceLocalizacao >= 0) {
+                const partes = linhas.slice(
+                    indiceLocalizacao + 1,
+                    indiceLocalizacao + 3
                 );
+
+                if (partes.length) {
+                    localizacao = partes.join(", ");
+                }
+            }
+
+            // IMAGENS DO ANÚNCIO
+            const imagens = [
+                ...new Set(
+                    [...document.querySelectorAll("img")]
+                        .map(img =>
+                            img.getAttribute("src") ||
+                            img.getAttribute("data-src")
+                        )
+                        .filter(src =>
+                            src &&
+                            src.includes("img.olx.com.br/images/")
+                        )
+                )
+            ];
 
             return {
                 titulo,
-                preco,
+                preco: String(preco),
                 nomeDono,
-                vendasConcluidas,
                 descricao,
                 localizacao,
-                imagens: [...new Set(imagens)],
+                imagens,
                 url: location.href,
                 dataExtracao: new Date().toISOString()
             };
         });
 
         if (
-            dados.titulo === "Não encontrado" ||
-            dados.titulo.toLowerCase().includes("blocked")
+            !dados.titulo ||
+            dados.titulo === "Não encontrado"
         ) {
-            throw new Error("Não foi possível extrair o anúncio.");
+            throw new Error(
+                "Não foi possível identificar o título do anúncio."
+            );
         }
 
         return {
@@ -107,6 +167,8 @@ async function extrairDadosProdutoOLX(url) {
         };
 
     } catch (erro) {
+        console.error("Erro ao extrair produto OLX:", erro.message);
+
         return {
             sucesso: false,
             erro: erro.message
