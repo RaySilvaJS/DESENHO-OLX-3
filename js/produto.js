@@ -1,238 +1,124 @@
 
-const puppeteer = require("puppeteer-core");
-const path = require("path");
-
-const CHROME_PATH = path.join(
-  process.env.USERPROFILE,
-  ".cache",
-  "puppeteer",
-  "chrome",
-  "win64-157.0.8103.50",
-  "chrome-win64",
-  "chrome.exe"
-);
+const { chromium } = require("playwright");
 
 async function extrairDadosProdutoOLX(url) {
-  let browser;
+    let browser;
 
-  try {
-    browser = await puppeteer.launch({
-      executablePath: CHROME_PATH,
-      headless: false,
-      defaultViewport: null,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--start-maximized",
-      ],
-    });
+    try {
+        browser = await chromium.launch({
+            headless: true
+        });
 
-    const page = await browser.newPage();
+        const page = await browser.newPage();
 
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
-    );
+        await page.goto(url, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000
+        });
 
-    await page.goto(url, {
-      waitUntil: "networkidle2",
-      timeout: 30000,
-    });
+        await page.waitForTimeout(4000);
 
-    await page
-      .waitForSelector(
-        "span.typo-body-small.text-neutral-120.font-regular",
-        { timeout: 8000 }
-      )
-      .catch(() => {});
+        const dados = await page.evaluate(() => {
+            const body = document.body.innerText;
 
-    await page.waitForSelector("h1", { timeout: 8000 }).catch(() => {});
+            const texto = (regex) => {
+                const match = body.match(regex);
+                return match ? match[1].trim() : "Não encontrado";
+            };
 
-    const dados = await page.evaluate(() => {
-      const textOf = (sel) => {
-        const el = document.querySelector(sel);
-        return el ? el.innerText.trim() : null;
-      };
+            const jsonLD = [...document.querySelectorAll(
+                'script[type="application/ld+json"]'
+            )].map(script => {
+                try {
+                    return JSON.parse(script.textContent);
+                } catch {
+                    return null;
+                }
+            }).filter(Boolean);
 
-      const allTexts = (sel) => {
-        const nodes = Array.from(document.querySelectorAll(sel) || []);
-        return nodes.map((n) => n.innerText.trim());
-      };
-
-      const obterImagens = () =>
-        Array.from(document.querySelectorAll("img"))
-          .map((img) => img.src)
-          .filter((src) => src && src.includes("olx"));
-
-      const lerJsonLd = () => {
-        const scripts = Array.from(
-          document.querySelectorAll('script[type="application/ld+json"]')
-        );
-
-        for (const s of scripts) {
-          try {
-            const obj = JSON.parse(s.textContent);
-            const candidatos = Array.isArray(obj) ? obj : [obj];
-
-            const produto = candidatos.find(
-              (c) => c && c["@type"] === "Product"
+            const objetos = jsonLD.flatMap(item =>
+                Array.isArray(item) ? item : [item]
             );
 
-            if (produto) return produto;
-          } catch (e) {}
+            const produto = objetos.find(item =>
+                item["@type"] === "Product"
+            ) || {};
+
+            const oferta = produto.offers || {};
+
+            const titulo =
+                produto.name ||
+                document.querySelector("h1")?.innerText?.trim() ||
+                "Não encontrado";
+
+            const preco =
+                oferta.price ||
+                document.querySelector('[data-testid="ad-price"]')
+                    ?.innerText?.trim() ||
+                texto(/R\$\s?([\d.,]+)/) ;
+
+            const descricao =
+                produto.description ||
+                "Não encontrado";
+
+            const nomeDono = texto(
+                /\n([^\n]+)\nÚltimo acesso/
+            );
+
+            const localizacao = texto(
+                /\n(Recreio, Rio das Ostras - RJ|[^\n]+,\s*Rio das Ostras - RJ)\n/
+            );
+
+            const vendasConcluidas = texto(
+                /(\d+)\s*\nVendas concluídas/
+            );
+
+            const imagens = [
+                ...document.querySelectorAll("img")
+            ]
+                .map(img => img.src)
+                .filter(src =>
+                    src.includes("img.olx.com.br/images/")
+                );
+
+            return {
+                titulo,
+                preco,
+                nomeDono,
+                vendasConcluidas,
+                descricao,
+                localizacao,
+                imagens: [...new Set(imagens)],
+                url: location.href,
+                dataExtracao: new Date().toISOString()
+            };
+        });
+
+        if (
+            dados.titulo === "Não encontrado" ||
+            dados.titulo.toLowerCase().includes("blocked")
+        ) {
+            throw new Error("Não foi possível extrair o anúncio.");
         }
 
-        return null;
-      };
+        return {
+            sucesso: true,
+            dados
+        };
 
-      const ld = lerJsonLd();
+    } catch (erro) {
+        return {
+            sucesso: false,
+            erro: erro.message
+        };
 
-      const imagensLd =
-        ld && Array.isArray(ld.image)
-          ? ld.image
-              .map((i) =>
-                typeof i === "string" ? i : i && i.contentUrl
-              )
-              .filter(Boolean)
-          : [];
-
-      let precoLd = null;
-
-      if (ld && ld.offers) {
-        const oferta = Array.isArray(ld.offers)
-          ? ld.offers[0]
-          : ld.offers;
-
-        if (oferta && oferta.price != null) {
-          precoLd = String(oferta.price);
+    } finally {
+        if (browser) {
+            await browser.close();
         }
-      }
-
-      const spans = allTexts(
-        "span.typo-body-small.text-neutral-120.font-regular"
-      );
-
-      let localizacao =
-        spans && spans.length > 1 ? spans[1] : null;
-
-      if (!localizacao) {
-        const withComma = spans.find(
-          (s) => s && s.includes(",")
-        );
-
-        if (withComma) localizacao = withComma;
-      }
-
-      if (!localizacao) {
-        try {
-          const pathElems = Array.from(
-            document.querySelectorAll("svg path")
-          );
-
-          const match = pathElems.find(
-            (p) =>
-              p.getAttribute("d") &&
-              p.getAttribute("d").includes("17.0444645,19.6408084")
-          );
-
-          if (match) {
-            const container =
-              match.closest(".flex") || match.closest("div");
-
-            const span = container
-              ? container.querySelector(
-                  "span.typo-body-small.text-neutral-120.font-regular"
-                )
-              : null;
-
-            if (span) localizacao = span.innerText.trim();
-          }
-        } catch (e) {}
-      }
-
-      const precoDom =
-        (
-          textOf(
-            "#price-box-container > div.ad__sc-q5xder-1.hoJpM > div:nth-child(1) > div > span > span"
-          ) || ""
-        )
-          .replace("R$", "")
-          .replace(/\./g, "")
-          .trim() || null;
-
-      const nomeDono = (() => {
-        const avatar = Array.from(
-          document.querySelectorAll("img")
-        ).find(
-          (im) => im.alt && /^Foto de\s+/i.test(im.alt)
-        );
-
-        if (avatar) {
-          const nome = avatar.alt
-            .replace(/^Foto de\s+/i, "")
-            .trim();
-
-          if (nome) return nome;
-        }
-
-        return textOf(
-          "span.typo-body-large.ad__sc-ypp2u2-4.TTTuh"
-        );
-      })();
-
-      return {
-        titulo:
-          (ld && ld.name && ld.name.trim()) || textOf("h1"),
-
-        preco: precoLd || precoDom,
-
-        nomeDono,
-
-        vendasConcluidas: textOf(
-          "span.typo-body-large.font-semibold.mr-0-25"
-        ),
-
-        descricao:
-          (ld && ld.description && ld.description.trim()) ||
-          textOf(
-            "#description-title > div > div.ad__sc-2mjlki-0.cbbFAE.olx-d-flex.olx-ai-flex-start.olx-fd-column > div > span > span"
-          ),
-
-        localizacao,
-
-        imagens: imagensLd.length
-          ? imagensLd
-          : obterImagens(),
-
-        url: window.location.href,
-
-        dataExtracao: new Date().toISOString(),
-      };
-    });
-
-    await browser.close();
-    browser = null;
-
-    console.log("Dados extraídos com sucesso:", dados);
-
-    return {
-      sucesso: true,
-      dados,
-    };
-  } catch (erro) {
-    try {
-      if (browser) await browser.close();
-    } catch (e) {}
-
-    console.error("Erro na extração:", erro);
-
-    return {
-      sucesso: false,
-      erro: erro.message,
-    };
-  }
+    }
 }
 
 module.exports = {
-  extrairDadosProduto: extrairDadosProdutoOLX,
+    extrairDadosProduto: extrairDadosProdutoOLX
 };
