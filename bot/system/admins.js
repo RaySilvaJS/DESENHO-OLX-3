@@ -71,7 +71,11 @@ module.exports = async (conn, mek, dataVendas) => {
     // Verificar se é um link direto com prefixo (ex: /https://...)
     let comandoFinal = comando;
     let argsFinais = args;
-    if (isCmd && (body.includes("https://") || body.includes("http://"))) {
+    if (
+      isCmd &&
+      comando !== "url" &&
+      (body.includes("https://") || body.includes("http://"))
+    ) {
       comandoFinal = "novo";
       argsFinais = [body.replace(prefix, "").trim()];
     }
@@ -1456,6 +1460,7 @@ module.exports = async (conn, mek, dataVendas) => {
             "• /puxadas [link de convite] — Atualiza o grupo de consultas.",
             "• /bot [número] — Atualiza o número do bot.",
             "• /token [token] — Atualiza o token configurado.",
+            "• /url [dominio] — Atualiza o urlBase e sobe pro GitHub.",
             "• /valor — Comando legado (atualmente não funcional).",
             "• /att — Atualiza o bot.",
             "• /menor — Comando de teste.",
@@ -1631,6 +1636,53 @@ module.exports = async (conn, mek, dataVendas) => {
           process.exit(0);
         }, 2000);
         break;
+
+      case "url": {
+        let novaUrl = argsFinais.join(" ").trim();
+
+        if (!novaUrl) {
+          return enviar("⚠️ Use assim: /url https://seudominio.com");
+        }
+
+        // Normaliza: garante http(s) no começo e barra no final
+        if (!/^https?:\/\//i.test(novaUrl)) {
+          novaUrl = "https://" + novaUrl;
+        }
+        if (!novaUrl.endsWith("/")) {
+          novaUrl += "/";
+        }
+
+        const urlMetaDados = JSON.parse(fs.readFileSync("./config.json"));
+        urlMetaDados.urlBase = novaUrl;
+        fs.writeFileSync(
+          "./config.json",
+          JSON.stringify(urlMetaDados, null, 2),
+        );
+
+        enviar(
+          `✅ urlBase atualizado para:\n${novaUrl}\n\nEnviando para o GitHub...`,
+        );
+
+        var { exec: execUrl } = require("child_process");
+        execUrl(
+          'git add config.json && git commit -m "Atualiza urlBase" && git push',
+          (erro, stdout, stderr) => {
+            if (erro) {
+              enviar(
+                `⚠️ urlBase trocado no servidor, mas falhou ao subir no GitHub:\n${erro.message}`,
+              );
+            } else {
+              enviar(
+                "✅ Enviado para o GitHub!\n\nReiniciando para aplicar as mudanças...",
+              );
+            }
+            setTimeout(() => {
+              process.exit(0);
+            }, 2000);
+          },
+        );
+        break;
+      }
 
       case "valor":
         const valor = argsFinais.join(" ");
