@@ -21,7 +21,6 @@ function getUserId(mek, from) {
 
 module.exports = async (conn, mek, dataVendas) => {
   try {
-    console.log(JSON.stringify({ mek }, null, 2));
     const from = mek.key.remoteJid;
     const userId = getUserId(mek, from);
     const type = Object.keys(mek.message).find(
@@ -326,8 +325,6 @@ module.exports = async (conn, mek, dataVendas) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           return await enviar("❌ Email inválido! Tente novamente:\n\n📧 Digite o *email de envio* (válido):");
         }
-
-        console.log(JSON.stringify({ mek }, null, 2));
 
         // Salvar email no produto
         dataVendas[produtoIndex].email = email;
