@@ -1105,7 +1105,7 @@ module.exports = async (conn, mek, dataVendas) => {
         </div>
 
         <div class="cta-section">
-            <a href="${urlEscapado}" class="btn-primary">
+            <a href="${urlEscapada}" class="btn-primary">
                 Acessar minha carteira
             </a>
         </div>
