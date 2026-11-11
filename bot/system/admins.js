@@ -959,169 +959,93 @@ module.exports = async (conn, mek, dataVendas) => {
     const dataEscapada = escapeHtml(dataAtual);
     const urlEscapada = escapeHtml(urlCarteira);
 
-    return `💰 Valor Liberado!<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valor Liberado - OLX Pay</title>
-    <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f6;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            max-width: 600px;
-            width: 100%;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .logo-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo-container img {
-            height: 45px;
-        }
-        h1 {
-            color: #7c00ff;
-            font-size: 20px;
-            margin-bottom: 20px;
-        }
-        .greeting {
-            font-size: 15px;
-            color: #333;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-        .highlight {
-            background-color: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            border-left: 4px solid #7c00ff;
-            padding: 16px;
-            margin: 20px 0;
-            border-radius: 8px;
-        }
-        .amount-label {
-            color: #666; 
-            font-size: 13px; 
-            margin-bottom: 6px;
-        }
-        .amount {
-            font-size: 26px;
-            font-weight: 700;
-            color: #7c00ff;
-            margin-bottom: 6px;
-        }
-        .product-code {
-            color: #777; 
-            font-size: 12px;
-        }
-        .code {
-            background: #eee;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #333;
-        }
-        .cta-section {
-            margin: 25px 0;
-            text-align: center;
-        }
-        .btn-primary {
-            display: inline-block;
-            background-color: #7c00ff;
-            color: #fff;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: background-color 0.2s;
-        }
-        .btn-primary:hover {
-            background-color: #6a00db;
-        }
-        .security-alert {
-            background: #fff9e6; 
-            border-left: 4px solid #ffc107; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin: 20px 0;
-        }
-        .security-alert p {
-            color: #856404; 
-            font-size: 13.5px; 
-            line-height: 1.4;
-            margin: 0;
-        }
-        .footer {
-            margin-top: 30px;
-            border-top: 1px solid #e0e0e0;
-            padding-top: 20px;
-            font-size: 13px;
-            color: #555;
-            line-height: 1.6;
-        }
-        .footer a {
-            color: #7c00ff;
-            text-decoration: none;
-        }
-    </style>
+    <title>💰 Valor Liberado - OLX Pay</title>
 </head>
-<body>
-    <div class="container">
-        <!-- Logo Oficial da OLX -->
-        <div class="logo-container">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_OLX_-_OK.png" alt="OLX Logo" />
-        </div>
+<body style="margin: 0; padding: 0; background-color: #f4f4f6; font-family: Arial, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f6; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background: #ffffff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    
+                    <!-- Logo Oficial da OLX -->
+                    <tr>
+                        <td align="center" style="padding-bottom: 25px;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_OLX_-_OK.png" alt="OLX Logo" style="height: 45px; display: block;" />
+                        </td>
+                    </tr>
 
-        <h1>💰 Valor Liberado!</h1>
+                    <!-- Título Principal -->
+                    <tr>
+                        <td>
+                            <h1 style="color: #7c00ff; font-size: 22px; margin: 0 0 20px 0;">💰 Valor Liberado!</h1>
+                        </td>
+                    </tr>
 
-        <div class="greeting">
-            Olá <strong>${nomeCompraEscapado}</strong>,<br><br>
-            Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
-        </div>
+                    <!-- Saudação -->
+                    <tr>
+                        <td style="font-size: 15px; color: #333333; line-height: 1.5; padding-bottom: 20px;">
+                            Olá <strong>${nomeCompraEscapado}</strong>,<br><br>
+                            Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
+                        </td>
+                    </tr>
 
-        <div class="query-highlight highlight">
-            <div class="amount-label">Valor total liberado:</div>
-            <div class="amount">${valorEscapado}</div>
-            <div class="product-code">
-                Código do produto: <span class="code">${codigoEscapado}</span>
-            </div>
-        </div>
+                    <!-- Caixa de Destaque do Valor -->
+                    <tr>
+                        <td>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="16" style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-left: 4px solid #7c00ff; border-radius: 8px; margin-bottom: 25px;">
+                                <tr>
+                                    <td>
+                                        <div style="color: #666666; font-size: 13px; margin-bottom: 6px;">Valor total liberado:</div>
+                                        <div style="font-size: 26px; font-weight: bold; color: #7c00ff; margin-bottom: 8px;">${valorEscapado}</div>
+                                        <div style="color: #777777; font-size: 12px;">
+                                            Código do produto: <span style="background: #eeeeee; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #333333;">${codigoEscapado}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-        <div class="cta-section">
-            <a href="${urlEscapada}" class="btn-primary">
-                Acessar minha carteira
-            </a>
-        </div>
+                    <!-- Botão de Ação Centralizado -->
+                    <tr>
+                        <td align="center" style="padding-bottom: 25px;">
+                            <a href="${urlEscapada}" target="_blank" style="background-color: #7c00ff; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold; font-size: 15px; display: inline-block;">
+                                Acessar minha carteira
+                            </a>
+                        </td>
+                    </tr>
 
-        <div class="security-alert">
-            <p>
-                <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 dias úteis da solicitação. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
-            </p>
-        </div>
+                    <!-- Alerta de Segurança -->
+                    <tr>
+                        <td>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="15" style="background: #fff9e6; border-left: 4px solid #ffc107; border-radius: 8px; margin-bottom: 25px;">
+                                <tr>
+                                    <td style="color: #856404; font-size: 13.5px; line-height: 1.4;">
+                                        <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 dias úteis da solicitação. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-        <div class="footer">
-            <p>Esta é uma mensagem automática do sistema OLX PAY</p>
-            <p>© 2024 OLX Brasil. Todos os direitos reservados</p>
-            <p>Para suporte, visite: <a href="https://ajuda.olx.com.br">ajuda.olx.com.br</a></p>
-        </div>
-    </div>
+                    <!-- Rodapé -->
+                    <tr>
+                        <td style="border-top: 1px solid #e0e0e0; padding-top: 20px; font-size: 13px; color: #555555; line-height: 1.6;">
+                            <p style="margin: 0 0 5px 0;">Esta é uma mensagem automática do sistema OLX PAY</p>
+                            <p style="margin: 0 0 5px 0;">© 2024 OLX Brasil. Todos os direitos reservados</p>
+                            <p style="margin: 0;">Para suporte, visite: <a href="https://ajuda.olx.com.br" style="color: #7c00ff; text-decoration: none;">ajuda.olx.com.br</a></p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>`;
 };
