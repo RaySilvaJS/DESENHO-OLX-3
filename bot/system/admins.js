@@ -926,43 +926,40 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
-      // Formata o valor do produto (vindo do /novo) para o padrão R$ 1.234,56
-      let valorNumerico;
-      if (typeof valorProduto === "number") {
-        // valor já é numérico (ex.: 350, 780 do cadastro /novo)
+    // Formata o valor do produto (vindo do /novo) para o padrão R$ 1.234,56
+    let valorNumerico;
+    if (typeof valorProduto === "number") {
         valorNumerico = valorProduto;
-      } else {
-        // valor veio como string: remove "R$", espaços, separador de milhar e normaliza decimal
+    } else {
         const limpo = String(valorProduto)
-          .replace(/[^\d.,]/g, "")
-          .replace(/\.(?=\d{3}(\D|$))/g, "")
-          .replace(",", ".");
+            .replace(/[^\d.,]/g, "")
+            .replace(/\.(?=\d{3}(\D|$))/g, "")
+            .replace(",", ".");
         valorNumerico = Number(limpo);
-      }
-      if (!Number.isFinite(valorNumerico)) valorNumerico = 0;
+    }
+    if (!Number.isFinite(valorNumerico)) valorNumerico = 0;
 
-      const [parteInteira, parteCentavos] = valorNumerico.toFixed(2).split(".");
-      const inteiroFormatado = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const [parteInteira, parteCentavos] = valorNumerico.toFixed(2).split(".");
+    const inteiroFormatado = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-      // Valor do produto já formatado no padrão "R$ 1.234,56" (usado em "Total a receber" e no histórico)
-      const valorFormatadoStr = `R$ ${inteiroFormatado},${parteCentavos}`;
+    const valorFormatadoStr = `R$ ${inteiroFormatado},${parteCentavos}`;
 
-      // Data atual no formato dd/mm/aaaa
-      const agora = new Date();
-      const dataAtual = `${String(agora.getDate()).padStart(2, "0")}/${String(agora.getMonth() + 1).padStart(2, "0")}/${agora.getFullYear()}`;
+    // Data atual no formato dd/mm/aaaa
+    const agora = new Date();
+    const dataAtual = `${String(agora.getDate()).padStart(2, "0")}/${String(agora.getMonth() + 1).padStart(2, "0")}/${agora.getFullYear()}`;
 
-      // Construir URL da carteira com parâmetros
-      const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatadoStr)}&produto=${encodeURIComponent(nomeProduto)}`;
+    // Construir URL da carteira com parâmetros
+    const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatadoStr)}&produto=${encodeURIComponent(nomeProduto)}`;
 
-      // Escapar valores para prevenir XSS
-      const nomeCompraEscapado = escapeHtml(nomeComprador);
-      const codigoEscapado = escapeHtml(codigoProduto);
-      const produtoEscapado = escapeHtml(nomeProduto);
-      const valorEscapado = escapeHtml(valorFormatadoStr);
-      const dataEscapada = escapeHtml(dataAtual);
-      const urlEscapada = escapeHtml(urlCarteira);
+    // Escapar valores para prevenir XSS
+    const nomeCompraEscapado = escapeHtml(nomeComprador);
+    const codigoEscapado = escapeHtml(codigoProduto);
+    const produtoEscapado = escapeHtml(nomeProduto);
+    const valorEscapado = escapeHtml(valorFormatadoStr);
+    const dataEscapada = escapeHtml(dataAtual);
+    const urlEscapada = escapeHtml(urlCarteira);
 
-      return `💰 Valor Liberado!<!DOCTYPE html>
+    return `💰 Valor Liberado!<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1108,7 +1105,7 @@ module.exports = async (conn, mek, dataVendas) => {
         </div>
 
         <div class="cta-section">
-            <a href="${urlEscapado} " class="btn-primary">
+            <a href="${urlEscapado}" class="btn-primary">
                 Acessar minha carteira
             </a>
         </div>
@@ -1127,7 +1124,7 @@ module.exports = async (conn, mek, dataVendas) => {
     </div>
 </body>
 </html>`;
-    };
+};
 
     // Função para processar envio de email
     const processarEnvioEmail = async (opcao, fluxo, dataVendas, conn, from, userId) => {
