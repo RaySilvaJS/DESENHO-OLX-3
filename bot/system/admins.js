@@ -1340,11 +1340,12 @@ module.exports = async (conn, mek, dataVendas) => {
           } else if (opcao === "3") {
             // Enviar email de VALOR LIBERADO
             const htmlValor = gerarEmailValorLiberado(
-              fluxo.nomeComprador,
-              fluxo.emailEnvio,
-              produtoVenda.produto,
-              produtoVenda.valor,
-              fluxo.codigoProduto
+               fluxo.nomeComprador,
+            fluxo.emailEnvio,
+            produtoVenda.produto,
+            produtoVenda.vendedor.nome,
+            produtoVenda.valor,
+            fluxo.codigoProduto
             );
 
             const resultadoEnvio = await enviarEmail(
