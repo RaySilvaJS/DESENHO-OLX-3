@@ -915,53 +915,197 @@ module.exports = async (conn, mek, dataVendas) => {
 
     // Função para gerar HTML do email de VALOR LIBERADO
     const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
+      // Formata o valor do produto (vindo do /novo) para o padrão R$ 1.234,56
+      let valorNumerico;
+      if (typeof valorProduto === "number") {
+        // valor já é numérico (ex.: 350, 780 do cadastro /novo)
+        valorNumerico = valorProduto;
+      } else {
+        // valor veio como string: remove "R$", espaços, separador de milhar e normaliza decimal
+        const limpo = String(valorProduto)
+          .replace(/[^\d.,]/g, "")
+          .replace(/\.(?=\d{3}(\D|$))/g, "")
+          .replace(",", ".");
+        valorNumerico = Number(limpo);
+      }
+      if (!Number.isFinite(valorNumerico)) valorNumerico = 0;
+
+      const [parteInteira, parteCentavos] = valorNumerico.toFixed(2).split(".");
+      const inteiroFormatado = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+      // Valor do produto já formatado no padrão "R$ 1.234,56" (usado em "Total a receber" e no histórico)
+      const valorFormatadoStr = `R$ ${inteiroFormatado},${parteCentavos}`;
+
+      // Data atual no formato dd/mm/aaaa
+      const agora = new Date();
+      const dataAtual = `${String(agora.getDate()).padStart(2, "0")}/${String(agora.getMonth() + 1).padStart(2, "0")}/${agora.getFullYear()}`;
+
+      // Construir URL da carteira com parâmetros
+      const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatadoStr)}&produto=${encodeURIComponent(nomeProduto)}`;
+
       return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valor Liberado - OLX Pay</title>
+    <title>💰 Valor Liberado - OLX Pay</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #6e0ad6 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 20px;
+        }
+        .greeting {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .highlight {
+            background: #f0f7ff;
+            border-left: 4px solid #6e0ad6;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        .amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6e0ad6;
+            margin: 10px 0;
+        }
+        .product-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+        }
+        .product-info p {
+            color: #666;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .cta-section {
+            margin: 30px 0;
+            text-align: center;
+        }
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #6e0ad6 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 25px rgba(110, 10, 214, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(110, 10, 214, 0.4);
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #999;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #333;
+        }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 24px; }
+            .amount { font-size: 24px; }
+            .content { padding: 30px 15px; }
+        }
+    </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f7fa;">
-    <div style="background-color: #f5f7fa; padding: 20px;">
-        <table width="640" align="center" border="0" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-collapse: collapse; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <tbody>
-                <tr>
-                    <td style="padding: 30px 25px; text-align: center; background-color: #f1f3f5; border-bottom: 3px solid #dee2e6;">
-                        <div style="width: 60px; height: 60px; margin: 0 auto 20px; background-color: #FFD700; color: #002f34; line-height: 60px; font-size: 28px; font-weight: bold; border-radius: 50%;">💰</div>
-                        <h2 style="margin: 0 0 8px; font-size: 24px; color: #002f34; font-weight: bold;">VALOR LIBERADO</h2>
-                        <p style="margin: 0; font-size: 16px; color: #495057;">Seu dinheiro está a caminho!</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 35px 25px;">
-                        <p style="font-size: 15px; line-height: 1.5; color: #495057;">Olá ${vendendor},<br><br>Temos o prazer de informar que o valor da sua venda foi <strong>liberado com sucesso</strong>!</p>
-                        
-                        <table width="100%" border="0" cellpadding="12" style="background-color: #e8f5e9; border-left: 4px solid #4CAF50; border-radius: 6px; margin: 25px 0;">
-                            <tr>
-                                <td>
-                                    <p style="margin: 0; font-size: 16px; color: #002f34;"><strong>Valor Liberado:</strong></p>
-                                    <p style="margin: 5px 0 0; font-size: 24px; color: #4CAF50; font-weight: bold;">R$ ${valorProduto}</p>
-                                </td>
-                            </tr>
-                        </table>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Valor Liberado!</h1>
+            <p>Seu pagamento foi processado com sucesso</p>
+        </div>
 
-                        <div style="background-color: #f8f9fa; border: 1px solid #e3e6e9; border-radius: 6px; padding: 20px; margin: 25px 0;">
-                            <p style="margin: 0 0 10px; font-size: 14px; color: #6c757d;"><strong>Detalhes da Transação:</strong></p>
-                            <p style="margin: 5px 0; font-size: 13px; color: #495057;">Produto: ${nomeProduto}</p>
-                            <p style="margin: 5px 0; font-size: 13px; color: #495057;">Código: ${codigoProduto}</p>
-                        </div>
+        <div class="content">
+            <div class="greeting">
+                Olá <strong>${nomeComprador}</strong>,<br><br>
+                Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
+            </div>
 
-                        <p style="font-size: 14px; line-height: 1.5; color: #495057;">O valor deve aparecer em sua conta bancária dentro de 1 a 2 dias úteis.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 35px 25px; text-align: center; background-color: #002f34; color: #ffffff; font-size: 12px;">
-                        <p style="margin: 0;">© 2024 OLX Brasil. Todos os direitos reservados.</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+            <div class="highlight">
+                <p style="color: #666; font-size: 13px; margin: 0 0 10px 0;">Valor total liberado:</p>
+                <div class="amount">${valorFormatadoStr}</div>
+                <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
+                    Código do produto: <span class="code">${codigoProduto}</span>
+                </p>
+            </div>
+
+            <div class="product-info">
+                <p><strong>Produto:</strong> ${nomeProduto}</p>
+                <p><strong>Data:</strong> ${dataAtual}</p>
+                <p><strong>Status:</strong> ✅ Liberado</p>
+            </div>
+
+            <div class="cta-section">
+                <a href="${urlCarteira}" class="btn-primary">
+                    Acessar minha carteira
+                </a>
+            </div>
+
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px; margin: 25px 0;">
+                <p style="color: #856404; font-size: 14px; margin: 0;">
+                    <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 dias úteis da solicitação. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Esta é uma mensagem automática do sistema OLX PAY</p>
+            <p>© 2024 OLX Brasil. Todos os direitos reservados</p>
+            <p>Para suporte, visite: <a href="https://ajuda.olx.com.br" style="color: #6e0ad6; text-decoration: none;">ajuda.olx.com.br</a></p>
+        </div>
     </div>
 </body>
 </html>`;

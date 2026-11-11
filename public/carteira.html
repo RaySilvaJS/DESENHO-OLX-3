@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carteira OLX Pay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #e5e5e5;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .mobile-screen {
+            width: 100%;
+            max-width: 412px;
+            background-color: #f4f4f6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .balance-section {
+            background-color: #6e0ad6;
+            color: #ffffff;
+            padding: 18px 20px 28px 20px;
+            position: relative;
+        }
+
+        .menu-dots {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+            cursor: pointer;
+        }
+
+        .balance-label {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .balance-value {
+            display: flex;
+            align-items: baseline;
+            line-height: 1;
+        }
+
+        .balance-value .currency {
+            font-size: 22px;
+            font-weight: 700;
+            margin-right: 6px;
+            align-self: center;
+        }
+
+        .balance-value .main-amount {
+            font-size: 52px;
+            font-weight: 400;
+            letter-spacing: -1px;
+        }
+
+        .balance-value .cents {
+            font-size: 24px;
+            font-weight: 400;
+        }
+
+        .btn-withdraw {
+            background-color: #ffffff;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 22px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-withdraw:hover {
+            background-color: #f0f0f0;
+        }
+
+        .btn-withdraw:active {
+            transform: scale(0.98);
+        }
+
+        .sub-balance-bar {
+            background-color: #4f069c;
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .sub-balance-bar:hover {
+            background-color: #3d0480;
+        }
+
+        .sub-balance-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .sub-balance-info span strong {
+            font-weight: 700;
+        }
+
+        .content {
+            padding: 16px 16px 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .info-banner {
+            background-color: #e4f5f8;
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            color: #0e4f5c;
+        }
+
+        .info-icon {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .info-text h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #125c6b;
+        }
+
+        .info-text p {
+            font-size: 14.5px;
+            line-height: 1.45;
+            color: #125c6b;
+        }
+
+        .info-text strong {
+            font-weight: 700;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .auto-withdraw-card {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .illustration {
+            width: 56px;
+            flex-shrink: 0;
+        }
+
+        .auto-withdraw-content {
+            flex: 1;
+        }
+
+        .auto-withdraw-content h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 8px;
+        }
+
+        .auto-withdraw-content p {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #555555;
+            margin-bottom: 16px;
+        }
+
+        .btn-accounts {
+            background-color: #6e0ad6;
+            color: #ffffff;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-accounts:hover {
+            background-color: #5509b8;
+        }
+
+        .btn-accounts:active {
+            transform: scale(0.98);
+        }
+
+        .history-card {
+            background-color: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-card h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 12px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+            padding-bottom: 2px;
+        }
+
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .history-title {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #222222;
+            line-height: 1.35;
+        }
+
+        .history-date {
+            font-size: 13px;
+            color: #767676;
+        }
+
+        .history-amount-positive {
+            font-size: 15px;
+            font-weight: 700;
+            color: #008a3e;
+            white-space: nowrap;
+        }
+
+        .history-status-pending {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #666666;
+            background-color: #f0f0f2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: #999999;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .mobile-screen {
+                border-radius: 8px;
+            }
+
+            .balance-value .main-amount {
+                font-size: 40px;
+            }
+
+            .content {
+                padding: 12px 12px 16px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-screen">
+        <section class="balance-section">
+            <div class="menu-dots">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="12" cy="19" r="2"></circle>
+                </svg>
+            </div>
+
+            <span class="balance-label">Saldo disponível</span>
+
+            <div class="balance-row">
+                <div class="balance-value">
+                    <span class="currency">R$</span>
+                    <span class="main-amount" id="mainAmount">0</span>
+                    <span class="cents">,00</span>
+                </div>
+                <button class="btn-withdraw" onclick="sacarAgora()">Sacar agora</button>
+            </div>
+        </section>
+
+        <section class="sub-balance-bar">
+            <div class="sub-balance-info">
+                <span>Transferindo <strong id="transferring">R$ 0,00</strong></span>
+                <span>Total a receber <strong id="totalReceivable">R$ 0,00</strong></span>
+            </div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </section>
+
+        <main class="content">
+            <div class="info-banner">
+                <div class="info-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#188094" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <div class="info-text">
+                    <h3>Prazo para saque</h3>
+                    <p>Por motivos de segurança, a previsão para o saldo ficar disponível em sua conta é de até <strong>2 dias úteis</strong> após a solicitação.</p>
+                </div>
+            </div>
+
+            <div class="card auto-withdraw-card">
+                <div class="illustration">
+                    <svg viewBox="0 0 64 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="8" y="8" width="28" height="50" rx="4" fill="#FFFFFF" stroke="#222222" stroke-width="1.5"/>
+                        <line x1="18" y1="12" x2="26" y2="12" stroke="#222222" stroke-width="1.5" stroke-linecap="round"/>
+                        <text x="19" y="30" fill="#222222" font-size="11" font-weight="bold" font-family="sans-serif">$</text>
+                        <rect x="17" y="36" width="12" height="3" rx="1.5" fill="#6E0AD6"/>
+                        <rect x="4" y="25" width="7" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="4" y="31" width="8" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="4" y="37" width="8" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="5" y="43" width="7" height="5" rx="2.5" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <path d="M10 48 C10 56, 16 64, 24 64 L32 64 L32 48" fill="#FFFFFF" stroke="#222222" stroke-width="1.3"/>
+                        <rect x="31" y="14" width="22" height="22" rx="4" fill="#6E0AD6"/>
+                        <path d="M37 22H47M47 22L44 19M47 22L44 25" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M47 29H37M37 29L40 26M37 29L40 32" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div class="auto-withdraw-content">
+                    <h2>Saque automático</h2>
+                    <p>Seu saldo e pagamentos liberados serão transferidos automaticamente para a sua conta principal.</p>
+                    <button class="btn-accounts" onclick="verMinhasContas()">Ver minhas contas</button>
+                </div>
+            </div>
+
+            <div class="history-card">
+                <h2>Histórico</h2>
+                <div class="history-list" id="historyList">
+                    <div class="history-empty">Carregando...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        async function carregarDadosCarteira() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const codigoProduto = params.get('codigo');
+                const valorProduto = params.get('valor');
+                const nomeProduto = params.get('produto');
+
+                let dados = {
+                    saldoDisponivel: 0,
+                    transferindo: 'R$ 0,00',
+                    totalReceber: 'R$ 0,00',
+                    historico: []
+                };
+
+                if (codigoProduto && valorProduto) {
+                    dados.totalReceber = escapeHtml(valorProduto);
+                    dados.transferindo = 'R$ 0,00';
+
+                    if (nomeProduto) {
+                        dados.historico = [
+                            {
+                                titulo: `Aguardando liberação do pagamento da ${escapeHtml(nomeProduto)}`,
+                                data: new Date().toLocaleDateString('pt-BR'),
+                                valor: escapeHtml(valorProduto)
+                            },
+                            {
+                                titulo: 'Taxa de venda',
+                                data: new Date().toLocaleDateString('pt-BR'),
+                                status: 'pendente'
+                            }
+                        ];
+                    }
+                } else {
+                    const response = await fetch('/api/carteira-dados');
+                    if (response.ok) {
+                        dados = await response.json();
+                    }
+                }
+
+                if (dados.saldoDisponivel !== undefined) {
+                    document.getElementById('mainAmount').textContent =
+                        dados.saldoDisponivel.toString().split(',')[0] || '0';
+                }
+
+                const transferringEl = document.getElementById('transferring');
+                transferringEl.textContent = escapeHtml(dados.transferindo || 'R$ 0,00');
+
+                const totalEl = document.getElementById('totalReceivable');
+                totalEl.textContent = escapeHtml(dados.totalReceber || 'R$ 0,00');
+
+                if (dados.historico && Array.isArray(dados.historico)) {
+                    preencherHistorico(dados.historico);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+            }
+        }
+
+        function preencherHistorico(historico) {
+            const historyList = document.getElementById('historyList');
+
+            if (!historico || historico.length === 0) {
+                historyList.innerHTML = '';
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'history-empty';
+                emptyDiv.textContent = 'Nenhum histórico disponível';
+                historyList.appendChild(emptyDiv);
+                return;
+            }
+
+            historyList.innerHTML = '';
+
+            historico.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+
+                const historyInfo = document.createElement('div');
+                historyInfo.className = 'history-info';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'history-title';
+                titleSpan.textContent = escapeHtml(item.titulo || 'Transação');
+                historyInfo.appendChild(titleSpan);
+
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'history-date';
+                dateSpan.textContent = escapeHtml(item.data || new Date().toLocaleDateString('pt-BR'));
+                historyInfo.appendChild(dateSpan);
+
+                historyItem.appendChild(historyInfo);
+
+                if (item.status === 'pendente') {
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = 'history-status-pending';
+                    statusSpan.textContent = escapeHtml(item.status);
+                    historyItem.appendChild(statusSpan);
+                } else {
+                    const valueSpan = document.createElement('span');
+                    valueSpan.className = 'history-amount-positive';
+                    valueSpan.textContent = escapeHtml(item.valor || 'R$ 0,00');
+                    historyItem.appendChild(valueSpan);
+                }
+
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        function sacarAgora() {
+            alert('Redirecionando para saque...');
+        }
+
+        function verMinhasContas() {
+            alert('Redirecionando para contas bancárias...');
+            window.location.href = '/dados-bancarios.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarDadosCarteira);
+    </script>
+</body>
+</html>
