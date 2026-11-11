@@ -914,6 +914,17 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de VALOR LIBERADO
+    // Função para escapar HTML e prevenir XSS
+    const escapeHtml = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
     const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
       // Formata o valor do produto (vindo do /novo) para o padrão R$ 1.234,56
       let valorNumerico;
@@ -942,6 +953,14 @@ module.exports = async (conn, mek, dataVendas) => {
 
       // Construir URL da carteira com parâmetros
       const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatadoStr)}&produto=${encodeURIComponent(nomeProduto)}`;
+
+      // Escapar valores para prevenir XSS
+      const nomeCompraEscapado = escapeHtml(nomeComprador);
+      const codigoEscapado = escapeHtml(codigoProduto);
+      const produtoEscapado = escapeHtml(nomeProduto);
+      const valorEscapado = escapeHtml(valorFormatadoStr);
+      const dataEscapada = escapeHtml(dataAtual);
+      const urlEscapada = escapeHtml(urlCarteira);
 
       return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1070,26 +1089,26 @@ module.exports = async (conn, mek, dataVendas) => {
 
         <div class="content">
             <div class="greeting">
-                Olá <strong>${nomeComprador}</strong>,<br><br>
+                Olá <strong>${nomeCompraEscapado}</strong>,<br><br>
                 Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
             </div>
 
             <div class="highlight">
                 <p style="color: #666; font-size: 13px; margin: 0 0 10px 0;">Valor total liberado:</p>
-                <div class="amount">${valorFormatadoStr}</div>
+                <div class="amount">${valorEscapado}</div>
                 <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
-                    Código do produto: <span class="code">${codigoProduto}</span>
+                    Código do produto: <span class="code">${codigoEscapado}</span>
                 </p>
             </div>
 
             <div class="product-info">
-                <p><strong>Produto:</strong> ${nomeProduto}</p>
-                <p><strong>Data:</strong> ${dataAtual}</p>
+                <p><strong>Produto:</strong> ${produtoEscapado}</p>
+                <p><strong>Data:</strong> ${dataEscapada}</p>
                 <p><strong>Status:</strong> ✅ Liberado</p>
             </div>
 
             <div class="cta-section">
-                <a href="${urlCarteira}" class="btn-primary">
+                <a href="${urlEscapada}" class="btn-primary">
                     Acessar minha carteira
                 </a>
             </div>
