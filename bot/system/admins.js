@@ -535,7 +535,8 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de PAGAMENTO APROVADO
-    const gerarEmailPagamentoAprovado = (nomeComprador, emailComprador, nomeProduto, valorProduto, codigoProduto) => {
+
+    const gerarEmailPagamentoAprovado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
       return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -568,7 +569,7 @@ module.exports = async (conn, mek, dataVendas) => {
                     <td style="padding: 30px 25px; text-align: center; border-bottom: 3px solid #dee2e6; background-color: #f1f3f5;">
                         <div style="border-radius: 50%; width: 60px; height: 60px; margin: 0 auto 20px; background-color: #002f34; color: #ffffff; line-height: 60px; font-size: 28px; font-weight: bold;">✓</div>
                         <h2 style="margin: 0 0 8px; font-size: 24px; color: #002f34; font-weight: bold; line-height: 1.3;">PAGAMENTO APROVADO</h2>
-                        <p style="margin: 0 0 5px; font-size: 16px; line-height: 1.5; color: #495057;">Olá ${nomeComprador}, sua venda foi <strong style="color: #495057; border-color: #495057;">aprovada com sucesso!</strong></p>
+                        <p style="margin: 0 0 5px; font-size: 16px; line-height: 1.5; color: #495057;">Olá ${vendendor}, sua venda foi <strong style="color: #495057; border-color: #495057;">aprovada com sucesso!</strong></p>
                         <div style="display: inline-block; padding: 10px 20px; border-radius: 6px; border: 1px solid #e3e6e9; margin-top: 15px; background-color: #ffffff;">
                             <p style="margin: 0; font-size: 16px; font-weight: bold; color: #002f34;">📦 Produto: <span style="color: #ff6b00;">${nomeProduto}</span></p>
                         </div>
@@ -983,10 +984,11 @@ module.exports = async (conn, mek, dataVendas) => {
         let htmlEmail, assunto, sucessoMsg;
 
         if (opcao === "1") {
-          htmlEmail = gerarEmailPagamentoAprovado(
+          htmlEmail = gerarEmailPagamentoAprovado( 
             fluxo.nomeComprador,
             fluxo.emailEnvio,
             produtoVenda.produto,
+            produtoVenda.vendedor.nome,
             produtoVenda.valor,
             fluxo.codigoProduto
           );
