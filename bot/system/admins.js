@@ -1223,7 +1223,8 @@ module.exports = async (conn, mek, dataVendas) => {
               fluxo.nomeComprador,
               fluxo.emailEnvio,
               produtoVenda.produto,
-              produtoVenda.valor,
+            produtoVenda.vendedor.nome,
+            produtoVenda.valor,
               fluxo.codigoProduto
             );
 
