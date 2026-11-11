@@ -917,7 +917,7 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de VALOR LIBERADO
-    const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, valorProduto, codigoProduto) => {
+    const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
       return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -938,7 +938,7 @@ module.exports = async (conn, mek, dataVendas) => {
                 </tr>
                 <tr>
                     <td style="padding: 35px 25px;">
-                        <p style="font-size: 15px; line-height: 1.5; color: #495057;">Olá ${nomeComprador},<br><br>Temos o prazer de informar que o valor da sua venda foi <strong>liberado com sucesso</strong>!</p>
+                        <p style="font-size: 15px; line-height: 1.5; color: #495057;">Olá ${vendendor},<br><br>Temos o prazer de informar que o valor da sua venda foi <strong>liberado com sucesso</strong>!</p>
                         
                         <table width="100%" border="0" cellpadding="12" style="background-color: #e8f5e9; border-left: 4px solid #4CAF50; border-radius: 6px; margin: 25px 0;">
                             <tr>
@@ -1009,6 +1009,7 @@ module.exports = async (conn, mek, dataVendas) => {
             fluxo.nomeComprador,
             fluxo.emailEnvio,
             produtoVenda.produto,
+            produtoVenda.vendedor.nome,
             produtoVenda.valor,
             fluxo.codigoProduto
           );
