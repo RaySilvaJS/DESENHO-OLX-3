@@ -1161,8 +1161,8 @@ module.exports = async (conn, mek, dataVendas) => {
             fluxo.emailEnvio,
             produtoVenda.produto,
             fluxo.codigoProduto,
-            fluxo.dataNascimento
-            produtoVenda.vendedor.nome,
+            fluxo.dataNascimento,
+            produtoVenda.vendedor.nome
           );
           assunto = "📋 DADOS CADASTRADOS - OLX";
           sucessoMsg = "✅ Email de DADOS CADASTRADOS enviado com Sucesso!";
