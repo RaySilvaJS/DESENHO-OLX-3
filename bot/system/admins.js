@@ -989,7 +989,7 @@ module.exports = async (conn, mek, dataVendas) => {
                     <!-- Saudação -->
                     <tr>
                         <td style="font-size: 15px; color: #333333; line-height: 1.5; padding-bottom: 20px;">
-                            Olá <strong>${nomeCompraEscapado}</strong>,<br><br>
+                            Olá <strong>${vendendor}</strong>,<br><br>
                             Temos o prazer de informar que seu valor foi liberado e está disponível na sua carteira OLX Pay!
                         </td>
                     </tr>
