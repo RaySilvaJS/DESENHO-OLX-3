@@ -1026,7 +1026,7 @@ module.exports = async (conn, mek, dataVendas) => {
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="15" style="background: #fff9e6; border-left: 4px solid #ffc107; border-radius: 8px; margin-bottom: 25px;">
                                 <tr>
                                     <td style="color: #856404; font-size: 13.5px; line-height: 1.4;">
-                                        <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 dias úteis da solicitação. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
+                                        <strong>ℹ️ Informação importante:</strong> Por motivos de segurança, você poderá sacar o valor após 2 horas. Acesse sua carteira para mais detalhes e gerenciar suas contas bancárias.
                                     </td>
                                 </tr>
                             </table>
