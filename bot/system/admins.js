@@ -4,6 +4,13 @@ const { enviarEmMassa } = require("../../js/envio-email.js");
 const fs = require("fs");
 const path = require("path");
 const { ensureGroupJoined, resolveGroupId } = require("../../js/whatsapp-group");
+const {
+  apagarComprador,
+  dataNascimentoValida,
+  formatarNome,
+  listarCompradores,
+  salvarComprador,
+} = require("./compradores");
 
 // Sistema para rastrear mensagens que aguardam respostas de bots
 if (!global.pendingResponses) {
@@ -130,6 +137,35 @@ module.exports = async (conn, mek, dataVendas) => {
       }
     };
 
+    const formatarListaCompradores = (compradores, prefixo = "") => {
+      const opcoes = compradores
+        .map(
+          (comprador, indice) =>
+            `${indice + 1}️⃣ ${comprador.nome} — ${comprador.dataNascimento}`,
+        )
+        .join("\n");
+      return `${prefixo}👋 Você já usou estes compradores antes. Qual deseja usar?\n\n${opcoes}\n\n➕ Digite 0 para cadastrar um novo comprador`;
+    };
+
+    const perguntarComprador = async (edicao) => {
+      let compradores;
+      try {
+        compradores = listarCompradores(userId).slice(0, 5);
+      } catch (error) {
+        console.error("Erro ao carregar histórico de compradores:", error);
+        return enviar("⚠️ Não foi possível carregar o histórico de compradores.");
+      }
+
+      if (compradores.length === 0) {
+        edicao.etapaComprador = "nome";
+        return enviar(edicao.perguntas.comprador);
+      }
+
+      edicao.etapaComprador = "selecao";
+      edicao.opcoesComprador = compradores;
+      return enviar(formatarListaCompradores(compradores));
+    };
+
     // Função para iniciar o processo de perguntas
     const iniciarPerguntas = (codigo, linkInicial = null) => {
       // Limpa qualquer fluxo anterior deste usuário para evitar que um
@@ -209,6 +245,46 @@ module.exports = async (conn, mek, dataVendas) => {
         enviar("❌ Erro: Produto não encontrado!");
         delete global.produtosEmEdicao[userId];
         return;
+      }
+
+      if (campoAtual === "comprador" && edicao.etapaComprador === "selecao") {
+        const escolha = resposta.trim();
+        const opcoes = edicao.opcoesComprador;
+        if (!/^\d+$/.test(escolha) || Number(escolha) > opcoes.length) {
+          return enviar(
+            formatarListaCompradores(
+              opcoes,
+              "Opção inválida, escolha um número da lista ou 0 para novo comprador.\n\n",
+            ),
+          );
+        }
+
+        if (escolha === "0") {
+          edicao.etapaComprador = "nome";
+          return enviar(edicao.perguntas.comprador);
+        }
+
+        const comprador = opcoes[Number(escolha) - 1];
+        let atualizado;
+        try {
+          atualizado = salvarComprador(
+            userId,
+            comprador.nome,
+            comprador.dataNascimento,
+          );
+        } catch (error) {
+          console.error("Erro ao atualizar histórico do comprador:", error);
+          return enviar("❌ Não foi possível atualizar o histórico de compradores. Tente novamente.");
+        }
+        edicao.dataNascimentoHistorico = atualizado.dataNascimento;
+        edicao.etapaComprador = "selecionado";
+        resposta = atualizado.nome;
+      } else if (campoAtual === "comprador" && edicao.etapaComprador === "nome") {
+        resposta = formatarNome(resposta);
+        if (!resposta) {
+          return enviar(edicao.perguntas.comprador);
+        }
+        edicao.etapaComprador = "novo";
       }
 
       // Caso especial: processamento do link do produto
@@ -370,10 +446,6 @@ module.exports = async (conn, mek, dataVendas) => {
         const emailEnvio = email;
         const codigoProduto = edicao.codigo;
 
-        // Pedir data de nascimento
-        await enviar(`Qual a data de nascimento do comprador?`);
-
-        // Salvar estado para processar data de nascimento
         global.fluxoEnvioEmail[userId] = {
           etapa: 2,
           nomeComprador: nomeComprador,
@@ -384,6 +456,11 @@ module.exports = async (conn, mek, dataVendas) => {
 
         // Finalizar edição de produto
         delete global.produtosEmEdicao[userId];
+        if (edicao.dataNascimentoHistorico) {
+          return processarRespostaFluxoEmail(edicao.dataNascimentoHistorico);
+        }
+
+        await enviar(`Qual a data de nascimento do comprador?`);
         return;
       }
       // Processamento normal para outros campos
@@ -527,7 +604,11 @@ module.exports = async (conn, mek, dataVendas) => {
         // Próxima pergunta
         const proximoCampo = edicao.campos[edicao.etapaAtual];
         const proximaPergunta = edicao.perguntas[proximoCampo];
-        await enviar(proximaPergunta);
+        if (proximoCampo === "comprador") {
+          await perguntarComprador(edicao);
+        } else {
+          await enviar(proximaPergunta);
+        }
       }
     };
 
@@ -1157,26 +1238,33 @@ module.exports = async (conn, mek, dataVendas) => {
       
       if (fluxo.etapa === 2) {
         // Etapa 2: Receber data de nascimento
-        const dataRegex = /^\d{2}\/\d{2}\/\d{4}$/;
-        if (!dataRegex.test(resposta.trim())) {
-          return await enviar("❌ Formato inválido! Digite a data no formato DD/MM/AAAA (ex: 13/05/1993):");
+        const dataNascimento = resposta.trim();
+        if (!dataNascimentoValida(dataNascimento)) {
+          return await enviar("❌ Data inválida! Digite uma data real, não futura, no formato DD/MM/AAAA (ex: 13/05/1993):");
         }
 
         // Salvar data de nascimento no produto
         const produtoIndex = dataVendas.findIndex(p => p.codigo === fluxo.codigoProduto);
         if (produtoIndex !== -1) {
-          dataVendas[produtoIndex].dataNascimento = resposta.trim();
+          dataVendas[produtoIndex].dataNascimento = dataNascimento;
           salvarDados();
         }
 
+        try {
+          salvarComprador(userId, fluxo.nomeComprador, dataNascimento);
+        } catch (error) {
+          console.error("Erro ao salvar histórico do comprador:", error);
+          await enviar("⚠️ Não foi possível salvar este comprador no histórico.");
+        }
+
         // Mostrar menu de opções de email
-        const menuEmail = `✅ Dados completos!\n\n👤 Comprador: ${fluxo.nomeComprador}\n📧 Email: ${maskEmail(fluxo.emailEnvio)}\n📅 Data Nasc.: ${resposta.trim()}\n📦 Código: ${fluxo.codigoProduto}\n\nQual modelo de e-mail deseja enviar?\n\n1️⃣ PAGAMENTO APROVADO\n2️⃣ DADOS CADASTRADOS\n3️⃣ VALOR LIBERADO\n4️⃣ PÁGINA DE TAXA SITE\n\nResponda com o número da opção (1, 2, 3 ou 4)`;
+        const menuEmail = `✅ Dados completos!\n\n👤 Comprador: ${fluxo.nomeComprador}\n📧 Email: ${maskEmail(fluxo.emailEnvio)}\n📅 Data Nasc.: ${dataNascimento}\n📦 Código: ${fluxo.codigoProduto}\n\nQual modelo de e-mail deseja enviar?\n\n1️⃣ PAGAMENTO APROVADO\n2️⃣ DADOS CADASTRADOS\n3️⃣ VALOR LIBERADO\n4️⃣ PÁGINA DE TAXA SITE\n\nResponda com o número da opção (1, 2, 3 ou 4)`;
         
         const sent = await conn.sendMessage(from, { text: menuEmail });
 
         // Atualizar estado para processar escolha de email
         fluxo.etapa = 3;
-        fluxo.dataNascimento = resposta.trim();
+        fluxo.dataNascimento = dataNascimento;
         fluxo.menuKey = sent.key;
         return;
       }
@@ -1539,6 +1627,7 @@ module.exports = async (conn, mek, dataVendas) => {
             "📋 *MENU DE COMANDOS*",
             "",
             "• /novo [link] — Cadastra uma venda e inicia o preenchimento.",
+            "• /compradores — Lista seus compradores salvos; use /compradores apagar <número> para remover.",
             "• /cancelar — Cancela o preenchimento em andamento.",
             "• /olx [CPF ou link] — Consulta CPF ou produto da OLX.",
             "• /enviar [e-mails separados por vírgula] [código] — Envia e-mails.",
@@ -1558,6 +1647,43 @@ module.exports = async (conn, mek, dataVendas) => {
       case "menor":
         enviar("Maior da cu de Sp");
         break;
+
+      case "compradores": {
+        try {
+          const compradores = listarCompradores(userId);
+          if (argsFinais[0]?.toLowerCase() === "apagar") {
+            const indice = Number(argsFinais[1]) - 1;
+            if (!Number.isInteger(indice) || indice < 0) {
+              return enviar("Uso: /compradores apagar <número>");
+            }
+
+            const removido = apagarComprador(userId, indice);
+            if (!removido) {
+              return enviar("Número inválido. Use /compradores para ver a lista.");
+            }
+            return enviar(`✅ Comprador removido: ${removido.nome}`);
+          }
+
+          if (compradores.length === 0) {
+            return enviar("Você ainda não tem compradores salvos.");
+          }
+          return enviar(
+            [
+              "👥 *Seus compradores salvos:*",
+              "",
+              ...compradores.map(
+                (comprador, indice) =>
+                  `${indice + 1}️⃣ ${comprador.nome} — ${comprador.dataNascimento}`,
+              ),
+              "",
+              "Para apagar um comprador, use /compradores apagar <número>.",
+            ].join("\n"),
+          );
+        } catch (error) {
+          console.error("Erro ao processar /compradores:", error);
+          return enviar("⚠️ Não foi possível acessar o histórico de compradores.");
+        }
+      }
 
       case "enviar":
         // Verificar se há argumentos (emails e código do produto)
