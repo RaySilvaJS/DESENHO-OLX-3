@@ -814,7 +814,7 @@ module.exports = async (conn, mek, dataVendas) => {
         <div class="icon-circle">📝</div>
         <h2 style="color:#002f34; margin:0 0 8px; font-size:24px; font-weight:bold;">CADASTRO CONFIRMADO</h2>
         <p style="color:#495057; font-size:16px; margin:0 0 5px;">
-            Olá <strong>${nomeComprador}</strong>, seus dados foram <strong>cadastrados com sucesso!</strong>
+            Olá <strong>${vendendor}</strong>, seus dados foram <strong>cadastrados com sucesso!</strong>
         </p>
         <div style="margin-top:15px; color:#198754; font-size:18px; font-weight:bold;">
             ✅ Dados cadastrado com sucesso
