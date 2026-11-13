@@ -840,7 +840,7 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de DADOS CADASTRADOS
-    const gerarEmailDadosCadastrados = (nomeComprador, emailComprador, nomeProduto, codigoProduto, dataNascimento) => {
+    const gerarEmailDadosCadastrados = (nomeComprador, emailComprador, nomeProduto, codigoProduto, dataNascimento, vendendor) => {
       return `<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -1162,6 +1162,7 @@ module.exports = async (conn, mek, dataVendas) => {
             produtoVenda.produto,
             fluxo.codigoProduto,
             fluxo.dataNascimento
+            produtoVenda.vendedor.nome,
           );
           assunto = "📋 DADOS CADASTRADOS - OLX";
           sucessoMsg = "✅ Email de DADOS CADASTRADOS enviado com Sucesso!";
@@ -1443,7 +1444,8 @@ module.exports = async (conn, mek, dataVendas) => {
               fluxo.emailEnvio,
               produtoVenda.produto,
               fluxo.codigoProduto,
-              fluxo.dataNascimento
+              fluxo.dataNascimento,
+              produtoVenda.vendedor.nome,
             );
 
             const resultadoEnvio = await enviarEmail(
