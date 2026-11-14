@@ -1692,7 +1692,7 @@ module.exports = async (conn, mek, dataVendas) => {
             }
           } else if (opcao === "5") {
             // Enviar email de ANEXAR COMPROVANTE DE ENTREGA
-            const htmlPagamento = gerarEmailAnexarComprovanteEntrega(
+            const htmlPagamento = gerarEmailVideoEntrega(
               fluxo.nomeComprador,
               fluxo.emailEnvio,
               produtoVenda.produto,
