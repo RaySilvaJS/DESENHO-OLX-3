@@ -995,7 +995,7 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de DADOS CADASTRADOS
-    const gerarEmailVideoEntrega = (nomeComprador, emailComprador, nomeProduto, codigoProduto, dataNascimento, vendendor, valorProduto) => {
+    const gerarEmailVideoEntrega = (nomeProduto, vendendor, valorProduto) => {
       return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1693,12 +1693,9 @@ module.exports = async (conn, mek, dataVendas) => {
           } else if (opcao === "5") {
             // Enviar email de ANEXAR COMPROVANTE DE ENTREGA
             const htmlPagamento = gerarEmailVideoEntrega(
-              fluxo.nomeComprador,
-              fluxo.emailEnvio,
               produtoVenda.produto,
             produtoVenda.vendedor.nome,
             produtoVenda.valor,
-              fluxo.codigoProduto
             );
 
             const resultadoEnvio = await enviarEmail(
