@@ -1366,7 +1366,7 @@ module.exports = async (conn, mek, dataVendas) => {
         }
 
         // Mostrar menu de opções de email
-        const menuEmail = `✅ Dados completos!\n\n👤 Comprador: ${fluxo.nomeComprador}\n📧 Email: ${maskEmail(fluxo.emailEnvio)}\n📅 Data Nasc.: ${dataNascimento}\n📦 Código: ${fluxo.codigoProduto}\n\nQual modelo de e-mail deseja enviar?\n\n1️⃣ PAGAMENTO APROVADO\n2️⃣ DADOS CADASTRADOS\n3️⃣ VALOR LIBERADO\n4️⃣ PÁGINA DE TAXA SITE\n4️⃣ PÁGINA DE TAXA SITE\n5️⃣ PÁGINA COMPROVANTE DE ENTREGA\n\nResponda com o número da opção (1, 2, 3, 4 ou 5)`;
+        const menuEmail = `✅ Dados completos!\n\n👤 Comprador: ${fluxo.nomeComprador}\n📧 Email: ${maskEmail(fluxo.emailEnvio)}\n📅 Data Nasc.: ${dataNascimento}\n📦 Código: ${fluxo.codigoProduto}\n\nQual modelo de e-mail deseja enviar?\n\n1️⃣ PAGAMENTO APROVADO\n2️⃣ DADOS CADASTRADOS\n3️⃣ VALOR LIBERADO\n4️⃣ PÁGINA DE TAXA SITE\n5️⃣ PÁGINA COMPROVANTE DE ENTREGA\n\nResponda com o número da opção (1, 2, 3, 4 ou 5)`;
         
         const sent = await conn.sendMessage(from, { text: menuEmail });
 
@@ -1473,8 +1473,8 @@ module.exports = async (conn, mek, dataVendas) => {
         // Etapa 3: Escolher tipo de email (vem direto do fluxo /novo)
         const opcao = resposta.trim();
 
-        if (!["1", "2", "3", "4"].includes(opcao)) {
-          return await enviar("❌ Opção inválida! Digite 1, 2, 3 ou 4:");
+        if (!["1", "2", "3", "4", "5"].includes(opcao)) {
+          return await enviar("❌ Opção inválida! Digite 1, 2, 3, 4 ou 5:");
         }
 
         if (opcao === "4") {
