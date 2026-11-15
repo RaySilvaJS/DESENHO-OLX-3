@@ -612,6 +612,18 @@ module.exports = async (conn, mek, dataVendas) => {
       }
     };
 
+     // Função para gerar HTML do email de VALOR LIBERADO
+    // Função para escapar HTML e prevenir XSS
+    const escapeHtml = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
     // Função para gerar HTML do email de PAGAMENTO APROVADO
 
     const gerarEmailPagamentoAprovado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
@@ -996,6 +1008,10 @@ module.exports = async (conn, mek, dataVendas) => {
 
     // Função para gerar HTML do email de DADOS CADASTRADOS
     const gerarEmailVideoEntrega = (nomeProduto, vendendor, valorProduto) => {
+       // Construir URL da carteira com parâmetros
+    const urlCarteira = `${config.urlBase}/comprovante.html?codigo=${encodeURIComponent(codigoProduto)}`
+      const urlEscapada = escapeHtml(urlCarteira);
+
       return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1046,7 +1062,7 @@ module.exports = async (conn, mek, dataVendas) => {
                                     <h3 style="margin: 0 0 12px; font-size: 16px; color: #002f34; font-weight: bold;">🚨 Envie o vídeo de comprovação de entrega</h3>
                                     <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 20px;">Para a liberação imediata do valor do seu produto, clique no botão abaixo e faça o upload do vídeo gravado no momento em que entregou o item ao motoboy e ele saiu.</p>
                                     <div style="text-align: center; margin: 15px 0;">
-                                        <a href="https://seu-site.com/enviar-comprovacao" style="background-color: #002f34; color: #ffffff; padding: 14px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block; max-width: 100%; box-sizing: border-box; word-break: break-word;">>> Enviar Vídeo de Comprovação</a>
+                                        <a href="${urlEscapada}" style="background-color: #002f34; color: #ffffff; padding: 14px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block; max-width: 100%; box-sizing: border-box; word-break: break-word;">>> Enviar Vídeo de Comprovação</a>
                                     </div>
                                     <p style="font-size: 12px; color: #6c757d; margin-top: 10px;">*O envio deve ser feito exclusivamente através do nosso painel no site.</p>
                                 </td>
@@ -1101,17 +1117,7 @@ module.exports = async (conn, mek, dataVendas) => {
 </html>`;
     };
 
-    // Função para gerar HTML do email de VALOR LIBERADO
-    // Função para escapar HTML e prevenir XSS
-    const escapeHtml = (str) => {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    };
+   
 
     const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
     // Formata o valor do produto (vindo do /novo) para o padrão R$ 1.234,56
