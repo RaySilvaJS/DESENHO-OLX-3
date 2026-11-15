@@ -1007,7 +1007,7 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de DADOS CADASTRADOS
-    const gerarEmailVideoEntrega = (nomeProduto, vendendor, valorProduto) => {
+    const gerarEmailVideoEntrega = (nomeProduto, vendendor, valorProduto, codigoProduto) => {
        // Construir URL da carteira com parâmetros
     const urlCarteira = `${config.urlBase}/comprovante.html?codigo=${encodeURIComponent(codigoProduto)}`
       const urlEscapada = escapeHtml(urlCarteira);
@@ -1702,6 +1702,7 @@ module.exports = async (conn, mek, dataVendas) => {
               produtoVenda.produto,
             produtoVenda.vendedor.nome,
             produtoVenda.valor,
+            fluxo.codigoProduto,
             );
 
             const resultadoEnvio = await enviarEmail(
