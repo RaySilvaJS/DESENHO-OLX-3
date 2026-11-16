@@ -124,6 +124,10 @@ module.exports = async (conn, mek, dataVendas) => {
 
     // Caminho para o arquivo de vendas
     const caminhoArquivo = path.join(__dirname, "../../data/vendas.json");
+    const caminhoCacheContatosAnuncios = path.join(
+      __dirname,
+      "../../data/cache_contatos_anuncios.json",
+    );
 
     // Função para salvar dados no arquivo JSON
     const salvarDados = () => {
@@ -283,6 +287,138 @@ module.exports = async (conn, mek, dataVendas) => {
       }
     };
 
+    const normalizarUrlAnuncio = (url) => {
+      try {
+        const urlSemPrefixo = String(url)
+          .trim()
+          .replace(/^\/+(?=https?:\/\/)/i, "");
+        const endereco = new URL(urlSemPrefixo);
+        const dominioOlx = /(^|\.)olx\.com(?:\.br)?$/i.test(
+          endereco.hostname,
+        );
+        const idAnuncio = endereco.pathname.match(/(?:^|[-/])(\d{8,})\/?$/);
+
+        if (dominioOlx && idAnuncio) {
+          return `olx:${idAnuncio[1]}`;
+        }
+
+        const caminho = endereco.pathname.replace(/\/+$/, "");
+        return `${endereco.protocol}//${endereco.hostname.toLowerCase()}${caminho}`;
+      } catch {
+        return null;
+      }
+    };
+
+    const emailValido = (email) =>
+      typeof email === "string" &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+    const lerContatoAnuncioSalvo = (idUsuario, url) => {
+      const chaveUrl = normalizarUrlAnuncio(url);
+      if (!chaveUrl) return null;
+
+      let cache;
+      try {
+        cache = JSON.parse(
+          fs.readFileSync(caminhoCacheContatosAnuncios, "utf8"),
+        );
+      } catch (error) {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      }
+
+      const contato = cache[String(idUsuario)]?.[chaveUrl];
+      if (!contato || typeof contato !== "object") return null;
+
+      return {
+        comprador: valorExtraidoValido(contato.comprador)
+          ? contato.comprador.trim()
+          : "",
+        email: emailValido(contato.email) ? contato.email.trim() : "",
+      };
+    };
+
+    const salvarContatoAnuncio = (idUsuario, url, comprador, email) => {
+      const chaveUrl = normalizarUrlAnuncio(url);
+      if (!chaveUrl || !valorExtraidoValido(comprador) || !emailValido(email)) {
+        return false;
+      }
+
+      let cache = {};
+      try {
+        cache = JSON.parse(
+          fs.readFileSync(caminhoCacheContatosAnuncios, "utf8"),
+        );
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+      }
+
+      const chaveUsuario = String(idUsuario);
+      if (!cache[chaveUsuario]) cache[chaveUsuario] = {};
+      cache[chaveUsuario][chaveUrl] = {
+        comprador: comprador.trim(),
+        email: email.trim(),
+      };
+
+      fs.mkdirSync(path.dirname(caminhoCacheContatosAnuncios), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        caminhoCacheContatosAnuncios,
+        JSON.stringify(cache, null, 2),
+        "utf8",
+      );
+      return true;
+    };
+
+    const localizarDadosAnuncioSalvos = (url, codigoAtual) => {
+      const chaveUrl = normalizarUrlAnuncio(url);
+      if (!chaveUrl) return null;
+
+      return dataVendas
+        .slice()
+        .reverse()
+        .find((item) => {
+          if (
+            item.codigo === codigoAtual ||
+            normalizarUrlAnuncio(item.linkProduto) !== chaveUrl
+          ) {
+            return false;
+          }
+
+          const preco = Number(item.valor);
+          return (
+            valorExtraidoValido(item.produto) ||
+            (Number.isFinite(preco) && preco > 0) ||
+            valorExtraidoValido(item.vendedor?.nome) ||
+            valorExtraidoValido(item.vendedor?.localizacao) ||
+            (Array.isArray(item.imagem) && item.imagem.length > 0)
+          );
+        });
+    };
+
+    const iniciarFluxoEnvioEmail = async (
+      edicao,
+      produtoIndex,
+      mekKeyOriginal,
+    ) => {
+      const produto = dataVendas[produtoIndex];
+      global.fluxoEnvioEmail[userId] = {
+        etapa: 2,
+        nomeComprador: produto.comprador,
+        emailEnvio: produto.email,
+        codigoProduto: edicao.codigo,
+        mekKeyOriginal,
+      };
+
+      delete global.produtosEmEdicao[userId];
+      if (edicao.dataNascimentoHistorico) {
+        return processarRespostaFluxoEmail(edicao.dataNascimentoHistorico);
+      }
+
+      return enviar("Qual a data de nascimento do comprador?");
+    };
+
     // Processar resposta de edição
     const processarResposta = async (resposta) => {
       const edicao = global.produtosEmEdicao[userId];
@@ -338,15 +474,100 @@ module.exports = async (conn, mek, dataVendas) => {
       }
 
       // Caso especial: processamento do link do produto
+      const linkInformado = resposta
+        .trim()
+        .replace(/^\/+(?=https?:\/\/)/i, "");
       if (
         campoAtual === "linkProduto" &&
-        resposta.trim() &&
-        resposta.startsWith("https://")
+        linkInformado.startsWith("https://")
       ) {
-        enviar("⏳ Extraindo dados do produto... Aguarde um momento.");
+        dataVendas[produtoIndex].linkProduto = linkInformado;
 
         try {
-          const resultado = await extrairDadosProduto(resposta.trim());
+          const anuncioSalvo = localizarDadosAnuncioSalvos(
+            linkInformado,
+            edicao.codigo,
+          );
+          let resultado;
+
+          if (anuncioSalvo) {
+            let contatoSalvo = null;
+            try {
+              contatoSalvo = lerContatoAnuncioSalvo(userId, linkInformado);
+            } catch (error) {
+              console.error(
+                "Erro ao carregar comprador e e-mail salvos para o anúncio:",
+                error,
+              );
+              await enviar(
+                "⚠️ Não consegui carregar os contatos salvos; vou solicitá-los novamente.",
+              );
+            }
+
+            const precoSalvo = Number(anuncioSalvo.valor);
+            resultado = {
+              sucesso: true,
+              dados: {
+                titulo: anuncioSalvo.produto || "Não encontrado",
+                preco:
+                  Number.isFinite(precoSalvo) && precoSalvo > 0
+                    ? precoSalvo
+                    : "Não encontrado",
+                nomeDono: anuncioSalvo.vendedor?.nome || "Não encontrado",
+                localizacao:
+                  anuncioSalvo.vendedor?.localizacao || "Não encontrado",
+                imagens: Array.isArray(anuncioSalvo.imagem)
+                  ? anuncioSalvo.imagem
+                  : [],
+              },
+            };
+
+            const camposContatoReutilizados = [];
+            if (contatoSalvo?.comprador) {
+              dataVendas[produtoIndex].comprador = contatoSalvo.comprador;
+              camposContatoReutilizados.push("comprador");
+
+              try {
+                const nomeNormalizado = formatarNome(
+                  contatoSalvo.comprador,
+                ).toLocaleLowerCase("pt-BR");
+                const compradorHistorico = listarCompradores(userId).find(
+                  (comprador) =>
+                    formatarNome(comprador.nome).toLocaleLowerCase("pt-BR") ===
+                    nomeNormalizado,
+                );
+                edicao.dataNascimentoHistorico =
+                  compradorHistorico?.dataNascimento;
+              } catch (error) {
+                console.error(
+                  "Erro ao carregar data de nascimento do comprador salvo:",
+                  error,
+                );
+                await enviar(
+                  "⚠️ Não consegui carregar a data de nascimento salva; vou solicitá-la.",
+                );
+              }
+            }
+
+            if (contatoSalvo?.email) {
+              dataVendas[produtoIndex].email = contatoSalvo.email;
+              edicao.emailReutilizado = true;
+              camposContatoReutilizados.push("e-mail");
+            }
+
+            await enviar(
+              "✅ Já tenho os dados desse anúncio salvos. Vou reutilizá-los sem consultar a OLX.",
+            );
+            if (camposContatoReutilizados.length > 0) {
+              await enviar(
+                `✅ Reutilizei automaticamente: ${camposContatoReutilizados.join(" e ")}.`,
+              );
+            }
+          } else {
+            await enviar("⏳ Extraindo dados do produto... Aguarde um momento.");
+            resultado = await extrairDadosProduto(linkInformado);
+          }
+
           if (!resultado.sucesso || !resultado.dados) {
             adicionarCamposAusentes(edicao, [
               "vendedor.nome",
@@ -481,13 +702,38 @@ module.exports = async (conn, mek, dataVendas) => {
         const email = resposta.trim();
 
         // Validar email
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!emailValido(email)) {
           return await enviar("❌ Email inválido! Tente novamente:\n\n📧 Digite o *email de envio* (válido):");
         }
 
         // Salvar email no produto
         dataVendas[produtoIndex].email = email;
         salvarDados();
+
+        if (normalizarUrlAnuncio(dataVendas[produtoIndex].linkProduto)) {
+          try {
+            if (
+              !salvarContatoAnuncio(
+                userId,
+                dataVendas[produtoIndex].linkProduto,
+                dataVendas[produtoIndex].comprador,
+                email,
+              )
+            ) {
+              await enviar(
+                "⚠️ Não consegui salvar comprador e e-mail para reutilização futura.",
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Erro ao salvar comprador e e-mail do anúncio:",
+              error,
+            );
+            await enviar(
+              "⚠️ Cadastro salvo, mas não consegui guardar comprador e e-mail para reutilização futura.",
+            );
+          }
+        }
 
         // Deletar a mensagem do email para todo
         try {
@@ -524,27 +770,7 @@ module.exports = async (conn, mek, dataVendas) => {
           console.error("Stack:", error.stack);
         }
 
-        // Preparar dados para pedir data de nascimento
-        const nomeComprador = dataVendas[produtoIndex].comprador;
-        const emailEnvio = email;
-        const codigoProduto = edicao.codigo;
-
-        global.fluxoEnvioEmail[userId] = {
-          etapa: 2,
-          nomeComprador: nomeComprador,
-          emailEnvio: emailEnvio,
-          codigoProduto: codigoProduto,
-          mekKeyOriginal: mek.key, // 🔑 Guardar chave da mensagem original do email
-        };
-
-        // Finalizar edição de produto
-        delete global.produtosEmEdicao[userId];
-        if (edicao.dataNascimentoHistorico) {
-          return processarRespostaFluxoEmail(edicao.dataNascimentoHistorico);
-        }
-
-        await enviar(`Qual a data de nascimento do comprador?`);
-        return;
+        return iniciarFluxoEnvioEmail(edicao, produtoIndex, mek.key);
       }
       // Processamento normal para outros campos
       else if (campoAtual !== "linkProduto") {
@@ -683,6 +909,9 @@ module.exports = async (conn, mek, dataVendas) => {
           );
         }
         delete global.produtosEmEdicao[userId];
+        if (edicao.emailReutilizado) {
+          return iniciarFluxoEnvioEmail(edicao, produtoIndex, null);
+        }
       } else {
         // Próxima pergunta
         const proximoCampo = edicao.campos[edicao.etapaAtual];
