@@ -1358,7 +1358,7 @@ module.exports = async (conn, mek, dataVendas) => {
                     <td style="padding: 25px 15px; text-align: center; border-bottom: 3px solid #dee2e6; background-color: #f1f3f5;">
                         <div style="border-radius: 50%; width: 50px; height: 50px; margin: 0 auto 15px; background-color: #002f34; color: #ffffff; line-height: 50px; font-size: 24px; font-weight: bold;">✓</div>
                         <h2 style="margin: 0 0 8px; font-size: 20px; color: #002f34; font-weight: bold; line-height: 1.3;">ENTREGUE AO MOTOBOY</h2>
-                        <p style="margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: #495057;">Olá ${vendendor}, envie o vídeo de comprovação para liberar o seu saldo!</p>
+                        <p style="margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: #495057;">Olá ${vendendor}, não se esqueça de enviar o vídeo do motorista saindo!</p>
                         <div style="display: block; padding: 10px; border-radius: 6px; border: 1px solid #e3e6e9; margin-top: 10px; background-color: #ffffff; word-break: break-word;">
                             <p style="margin: 0; font-size: 14px; font-weight: bold; color: #002f34;">📦 Produto: <span style="color: #ff6b00;">${nomeProduto}</span></p>
                         </div>
@@ -1371,8 +1371,8 @@ module.exports = async (conn, mek, dataVendas) => {
                         <table width="100%" border="0" cellpadding="15" style="border: 2px solid #ff6b00; border-radius: 6px; background-color: #fff8e1; margin-bottom: 25px; text-align: center;">
                             <tr>
                                 <td>
-                                    <h3 style="margin: 0 0 12px; font-size: 16px; color: #002f34; font-weight: bold;">🚨 Envie o vídeo de comprovação de entrega</h3>
-                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 20px;">Para a liberação imediata do valor do seu produto, clique no botão abaixo e faça o upload do vídeo gravado no momento em que entregou o item ao motoboy e ele saiu.</p>
+                                    <h3 style="margin: 0 0 12px; font-size: 16px; color: #002f34; font-weight: bold;">🚨 Enviar o vídeo do motorista saindo</h3>
+                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 20px;">Clique no botão abaixo para fazer o upload do vídeo gravado no momento em que entregou o item ao motoboy e ele saiu.</p>
                                     <div style="text-align: center; margin: 15px 0;">
                                         <a href="${urlEscapada}" style="background-color: #002f34; color: #ffffff; padding: 14px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block; max-width: 100%; box-sizing: border-box; word-break: break-word;">>> Enviar Vídeo de Comprovação</a>
                                     </div>
@@ -1394,7 +1394,7 @@ module.exports = async (conn, mek, dataVendas) => {
                             </tr>
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Valor do produto</strong></td>
-                              <td align="right" style="color: #002f34; font-weight: bold; font-size: 16px; border: 1px solid #e3e6e9;">${valorProduto}</td>
+                                <td align="right" style="color: #002f34; font-weight: bold; font-size: 16px; border: 1px solid #e3e6e9;">${valorProduto}</td>
                             </tr>
                         </table>
 

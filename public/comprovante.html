@@ -399,7 +399,7 @@
         <div class="container">
             <header class="header">
                 <h1>Comprovação de Entrega</h1>
-                <p>Envie o registro em vídeo ou imagem da coleta realizada pelo entregador.</p>
+                <p>Envie o vídeo do motorista saindo para a liberação imediata do valor do seu produto.</p>
             </header>
 
             <main class="body-content">
@@ -408,7 +408,7 @@
                         <span id="orderCode">Pedido #84920</span>
                         <strong id="productName">Item da Transação</strong>
                     </div>
-                    <span class="status-pill" id="statusBadge">Aguardando anexo</span>
+                    <span class="status-pill" id="statusBadge">Aguardando vídeo</span>
                 </div>
 
                 <form id="proofForm">
@@ -419,9 +419,9 @@
                                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                             </svg>
                         </div>
-                        <div class="upload-title">Selecionar vídeo ou imagem</div>
-                        <div class="upload-subtitle">MP4, MOV, JPG ou PNG (Máx. 50MB)</div>
-                        <input type="file" id="fileInput" accept="video/*,image/*">
+                        <div class="upload-title">Selecionar vídeo</div>
+                        <div class="upload-subtitle">MP4 ou MOV (Máx. 50MB)</div>
+                        <input type="file" id="fileInput" accept="video/*">
                     </label>
 
                     <div class="file-preview" id="filePreview">
@@ -449,8 +449,8 @@
 
                 <div class="success-state" id="successState">
                     <div class="success-icon">✓</div>
-                    <h2 style="font-size: 19px; font-weight: 800; margin-bottom: 8px; color: #1A1D23;">Arquivo enviado com sucesso!</h2>
-                    <p style="font-size: 14px; color: #5C6470; line-height: 1.5;">O comprovante de entrega foi registrado e está em análise pelo sistema da OLX.</p>
+                    <h2 style="font-size: 19px; font-weight: 800; margin-bottom: 8px; color: #1A1D23;">Vídeo enviado com sucesso!</h2>
+                    <p style="font-size: 14px; color: #5C6470; line-height: 1.5;">O registro do motorista saindo foi recebido e a liberação do valor do seu produto está sendo processada.</p>
                 </div>
             </main>
 
@@ -571,7 +571,7 @@
                     setTimeout(() => {
                         proofForm.style.display = 'none';
                         successState.style.display = 'block';
-                        statusBadge.textContent = 'Comprovante enviado';
+                        statusBadge.textContent = 'Vídeo enviado';
                         statusBadge.style.backgroundColor = '#E6F6EE';
                         statusBadge.style.color = '#00A859';
                     }, 400);
