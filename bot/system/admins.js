@@ -178,6 +178,9 @@ module.exports = async (conn, mek, dataVendas) => {
           "👀 Digite o *link do produto na OLX* (opcional, apenas pressione enter para pular):",
         produto: "📦 Digite o *nome do produto*:",
         valor: "💰 Digite o *valor do produto*:",
+        "vendedor.nome": "👤 O nome do vendedor não foi encontrado. Digite-o:",
+        "vendedor.localizacao":
+          "📍 A localização do vendedor não foi encontrada. Digite-a:",
         comprador: "👤 Digite o *nome do comprador*:",
         email: "📧 Digite o *email de envio*:",
       };
@@ -231,6 +234,53 @@ module.exports = async (conn, mek, dataVendas) => {
         obj[path] = value;
       }
       return obj;
+    };
+
+    const valorExtraidoValido = (valor) => {
+      if (typeof valor !== "string") return false;
+
+      const texto = String(valor).trim();
+      const ePlaceholder =
+        /(?:^|[\s:])(?:n[aã]o\s+(?:foi\s+)?(?:encontrad[oa]|localizad[oa]|identificad[oa]|informad[oa]|dispon[ií]vel)|indispon[ií]vel|n\/a|none|null|undefined|[-–—]+)(?:$|[\s.!?:])/i.test(
+          texto,
+        );
+
+      return (
+        texto !== "" &&
+        !ePlaceholder
+      );
+    };
+
+    const converterPrecoExtraido = (valor) => {
+      if (
+        typeof valor !== "number" &&
+        !valorExtraidoValido(valor)
+      ) {
+        return NaN;
+      }
+
+      const texto = String(valor).trim().replace(/[^\d,.-]/g, "");
+      const normalizado = texto.includes(",")
+        ? texto.replace(/\./g, "").replace(",", ".")
+        : /^\d{1,3}(?:\.\d{3})+$/.test(texto)
+          ? texto.replace(/\./g, "")
+          : texto;
+
+      return Number(normalizado);
+    };
+
+    const adicionarCamposAusentes = (edicao, campos) => {
+      const novosCampos = campos.filter(
+        (campo) => !edicao.campos.includes(campo),
+      );
+      if (novosCampos.length === 0) return;
+
+      const indiceComprador = edicao.campos.indexOf("comprador");
+      if (indiceComprador === -1) {
+        edicao.campos.push(...novosCampos);
+      } else {
+        edicao.campos.splice(indiceComprador, 0, ...novosCampos);
+      }
     };
 
     // Processar resposta de edição
@@ -297,33 +347,43 @@ module.exports = async (conn, mek, dataVendas) => {
 
         try {
           const resultado = await extrairDadosProduto(resposta.trim());
-          if (resultado.sucesso === false)
-            return enviar(
-              "Não foi possível extrair dados do produto. Tente novamente.\n\n" +
-                resultado.erro,
+          if (!resultado.sucesso || !resultado.dados) {
+            adicionarCamposAusentes(edicao, [
+              "vendedor.nome",
+              "vendedor.localizacao",
+            ]);
+            await enviar(
+              "⚠️ Não foi possível extrair os dados do anúncio. " +
+                "Vamos preencher manualmente.",
             );
-
-          if (resultado.sucesso && resultado.dados) {
+          } else {
             // Armazenar dados extraídos
             edicao.dadosExtraidos = resultado.dados;
 
             // Coletar todos os dados preenchidos em um array
             const camposPreenchidos = [];
+            const camposAusentes = [];
 
             // Preencher campos automaticamente sem enviar mensagens individuais
-            if (resultado.dados.titulo) {
+            if (valorExtraidoValido(resultado.dados.titulo)) {
               dataVendas[produtoIndex].produto = resultado.dados.titulo;
               camposPreenchidos.push(
                 `📦 Nome do produto: ${resultado.dados.titulo}`,
               );
+            } else {
+              camposAusentes.push("produto");
             }
 
-            if (resultado.dados.preco) {
-              dataVendas[produtoIndex].valor = Number(resultado.dados.preco);
+            const precoExtraido = converterPrecoExtraido(
+              resultado.dados.preco,
+            );
+            if (Number.isFinite(precoExtraido) && precoExtraido > 0) {
+              dataVendas[produtoIndex].valor = precoExtraido;
               camposPreenchidos.push(
                 `💰 Valor do produto: R$ ${resultado.dados.preco}`,
               );
-              // camposPreenchidos.push(`✅ Campo valor já está preenchido.`);
+            } else {
+              camposAusentes.push("valor");
             }
 
             // Processar todas as imagens
@@ -338,23 +398,46 @@ module.exports = async (conn, mek, dataVendas) => {
               // );
             }
 
-            if (resultado.dados.nomeDono) {
+            if (valorExtraidoValido(resultado.dados.nomeDono)) {
               dataVendas[produtoIndex].vendedor.nome = resultado.dados.nomeDono;
               camposPreenchidos.push(
                 `👤 Nome do vendedor: ${resultado.dados.nomeDono}`,
               );
+            } else {
+              camposAusentes.push("vendedor.nome");
             }
 
-            if (resultado.dados.localizacao) {
+            if (valorExtraidoValido(resultado.dados.localizacao)) {
               dataVendas[produtoIndex].vendedor.localizacao =
                 resultado.dados.localizacao;
               camposPreenchidos.push(
                 `📍 Localização: ${resultado.dados.localizacao}`,
               );
+            } else {
+              camposAusentes.push("vendedor.localizacao");
             }
 
-            if (resultado.dados.titulo) {
-              // camposPreenchidos.push(`✅ Campo produto já está preenchido.`);
+            adicionarCamposAusentes(
+              edicao,
+              camposAusentes.filter(
+                (campo) =>
+                  campo === "vendedor.nome" ||
+                  campo === "vendedor.localizacao",
+              ),
+            );
+
+            if (camposAusentes.length > 0) {
+              const nomesCampos = {
+                produto: "produto",
+                valor: "valor",
+                "vendedor.nome": "nome do vendedor",
+                "vendedor.localizacao": "localização do vendedor",
+              };
+              camposPreenchidos.push(
+                `⚠️ Não encontrei ${camposAusentes
+                  .map((campo) => nomesCampos[campo])
+                  .join(", ")}. Vou pedir para você informar.`,
+              );
             }
 
             dataVendas[produtoIndex].plataforma = "OLX";
@@ -363,13 +446,13 @@ module.exports = async (conn, mek, dataVendas) => {
             if (camposPreenchidos.length > 0) {
               await enviar(camposPreenchidos.join("\n"));
             }
-          } else {
-            enviar(
-              "⚠️ Não foi possível extrair dados do link fornecido. Continuaremos com o preenchimento manual.",
-            );
           }
         } catch (error) {
           console.error("Erro ao processar link:", error);
+          adicionarCamposAusentes(edicao, [
+            "vendedor.nome",
+            "vendedor.localizacao",
+          ]);
           enviar(
             "⚠️ Erro ao processar o link. Continuaremos com o preenchimento manual.",
           );

@@ -27,11 +27,16 @@ async function extrairDadosProdutoOLX(url) {
                 .filter(Boolean);
 
             // Verifica se a OLX bloqueou o acesso
-            if (
-                /sorry, you have been blocked|access denied|acesso negado/i
-                    .test(body)
-            ) {
-                throw new Error("A OLX bloqueou o acesso ao anúncio.");
+            const acessoBloqueado = [
+                /sorry, you have been blocked|access denied|acesso negado/i,
+                /attention required|unable to access olx|cloudflare ray id/i
+            ].some(expressao => expressao.test(body));
+
+            if (acessoBloqueado) {
+                throw new Error(
+                    "A OLX bloqueou temporariamente o acesso ao anúncio. " +
+                    "Aguarde alguns minutos e tente novamente."
+                );
             }
 
             // Lê os dados estruturados da página
@@ -99,14 +104,35 @@ async function extrairDadosProdutoOLX(url) {
                 "Não encontrado";
 
             // VENDEDOR
-            const indiceConta = linhas.findIndex(linha =>
-                linha.toLowerCase() === "conta verificada"
-            );
+            const vendedorEstruturado = Array.isArray(produto.seller)
+                ? produto.seller[0]
+                : produto.seller;
+
+            const nomeVendedorJSON =
+                typeof vendedorEstruturado === "string"
+                    ? vendedorEstruturado.trim()
+                    : typeof vendedorEstruturado?.name === "string"
+                        ? vendedorEstruturado.name.trim()
+                        : "";
+
+            const nomeVendedorHTML = [
+                ...document.querySelectorAll(
+                    'span[class*="profile__name"], ' +
+                    '[data-testid*="seller-name"], ' +
+                    '[data-testid*="profile-name"]'
+                )
+            ]
+                .filter(elemento => elemento.getClientRects().length)
+                .map(elemento => elemento.innerText.trim())
+                .find(nome =>
+                    nome &&
+                    !/sobre o anunciante|conta verificada/i.test(nome)
+                );
 
             const nomeDono =
-                indiceConta >= 0
-                    ? linhas[indiceConta + 1] || "Não encontrado"
-                    : "Não encontrado";
+                nomeVendedorHTML ||
+                nomeVendedorJSON ||
+                "Não encontrado";
 
             // LOCALIZAÇÃO
             const indiceLocalizacao = linhas.findIndex(linha =>
