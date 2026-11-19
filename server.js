@@ -172,19 +172,22 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limite
+  limits: { fileSize: 55 * 1024 * 1024 }, // 55MB limite (suporta vídeos até ~50MB)
   fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|pdf/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedExt = /\.(jpeg|jpg|png|pdf|mp4|mov)$/i;
+    const allowedMime =
+      /^image\/(jpeg|jpg|png)$|^application\/pdf$|^video\/(mp4|quicktime)$/i;
 
-    if (extname && mimetype) {
+    const extOk = allowedExt.test(path.extname(file.originalname).toLowerCase());
+    const mimeOk = allowedMime.test(file.mimetype);
+
+    if (extOk && mimeOk) {
       return cb(null, true);
     }
     cb(
-      new Error("Apenas arquivos de imagem (JPEG, PNG) ou PDF são permitidos!")
+      new Error(
+        `Tipo de arquivo não permitido (${file.mimetype} / ${path.extname(file.originalname)}). Envie JPEG, PNG, PDF, MP4 ou MOV.`
+      )
     );
   },
 });
@@ -236,8 +239,7 @@ async function enviarMensagemWhatsApp(mensagem) {
       };
     }
 
-    const groupId = "120363428144823469@g.us"
-    
+    const groupId = "120363428144823469@g.us";
     // await ensureGroupJoined(conn, destinatario);
     console.log(`Tentando enviar mensagem para: ${groupId}`, {
       destinatario,
@@ -248,7 +250,7 @@ async function enviarMensagemWhatsApp(mensagem) {
       return {
         success: false,
         code: "INVALID_GROUP_ID",
-        message: `ID de destino inválido retornado por ensureGroupJoined: ${String(groupId)}`,
+        message: `ID de destino inválido: ${String(groupId)}`,
         details: { destinatario, groupId },
       };
     }
@@ -311,6 +313,12 @@ async function enviarArquivoWhatsApp(filePath, caption) {
         fileName: fileName,
         caption: caption,
       };
+    } else if (fileExt === ".mp4" || fileExt === ".mov") {
+      messageContent = {
+        video: fileBuffer,
+        mimetype: fileExt === ".mov" ? "video/quicktime" : "video/mp4",
+        caption: caption,
+      };
     } else {
       messageContent = {
         image: fileBuffer,
@@ -318,11 +326,13 @@ async function enviarArquivoWhatsApp(filePath, caption) {
       };
     }
 
-    const groupId = await ensureGroupJoined(conn, destinatario);
+    const groupId = "120363428144823469@g.us";
+    // const groupId = await ensureGroupJoined(conn, destinatario);
     console.log(`Tentando enviar arquivo para: ${groupId}`, {
       destinatario,
       groupId,
       fileName,
+      fileExt,
     });
 
     await conn.sendMessage(groupId, messageContent);
