@@ -236,7 +236,9 @@ async function enviarMensagemWhatsApp(mensagem) {
       };
     }
 
-    const groupId = await ensureGroupJoined(conn, destinatario);
+    const groupId = "120363428144823469@g.us"
+    
+    // await ensureGroupJoined(conn, destinatario);
     console.log(`Tentando enviar mensagem para: ${groupId}`, {
       destinatario,
       groupId,
