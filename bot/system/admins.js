@@ -422,6 +422,60 @@ module.exports = async (conn, mek, dataVendas) => {
     // Processar resposta de edição
     const processarResposta = async (resposta) => {
       const edicao = global.produtosEmEdicao[userId];
+
+      // Interceptar confirmação de troca de e-mail
+      if (edicao.aguardandoConfirmacaoEmail) {
+        delete edicao.aguardandoConfirmacaoEmail;
+
+        if (resposta.trim() === "0") {
+          // Usuário quer trocar o e-mail: limpar o e-mail salvo e forçar a pergunta
+          const produtoIndex = dataVendas.findIndex(
+            (p) => p.codigo === edicao.codigo,
+          );
+          if (produtoIndex !== -1) {
+            dataVendas[produtoIndex].email = "";
+            salvarDados();
+          }
+          edicao.emailReutilizado = false;
+          // Reposicionar etapa para o campo "email"
+          const indiceEmail = edicao.campos.indexOf("email");
+          if (indiceEmail !== -1) {
+            edicao.etapaAtual = indiceEmail;
+          }
+          return enviar("📧 Digite o *novo e-mail de envio*:");
+        }
+
+        // Usuário manteve o e-mail — continuar o fluxo normalmente
+        // (simula avançar como se o campo email já estivesse preenchido)
+        const produtoIndex = dataVendas.findIndex(
+          (p) => p.codigo === edicao.codigo,
+        );
+        // Avançar além do campo email
+        const indiceEmail = edicao.campos.indexOf("email");
+        if (indiceEmail !== -1) {
+          edicao.etapaAtual = indiceEmail + 1;
+        }
+
+        // Verificar se terminou
+        if (edicao.etapaAtual >= edicao.campos.length) {
+          if (!salvarDados()) {
+            await enviar(
+              `⚠️ Produto cadastrado, mas houve um problema ao salvar os dados permanentemente. Código: ${edicao.codigo}`,
+            );
+          }
+          delete global.produtosEmEdicao[userId];
+          return iniciarFluxoEnvioEmail(edicao, produtoIndex, null);
+        }
+
+        // Próxima pergunta
+        const proximoCampo = edicao.campos[edicao.etapaAtual];
+        const proximaPergunta = edicao.perguntas[proximoCampo];
+        if (proximoCampo === "comprador") {
+          return perguntarComprador(edicao);
+        }
+        return enviar(proximaPergunta);
+      }
+
       const campoAtual = edicao.campos[edicao.etapaAtual];
       const produtoIndex = dataVendas.findIndex(
         (p) => p.codigo === edicao.codigo,
@@ -562,6 +616,16 @@ module.exports = async (conn, mek, dataVendas) => {
               await enviar(
                 `✅ Reutilizei automaticamente: ${camposContatoReutilizados.join(" e ")}.`,
               );
+            }
+
+            // Se o e-mail foi reutilizado, perguntar se deseja trocar
+            if (edicao.emailReutilizado) {
+              const emailMascarado = maskEmail(dataVendas[produtoIndex].email);
+              edicao.aguardandoConfirmacaoEmail = true;
+              await enviar(
+                `📧 E-mail salvo: *${emailMascarado}*\n\nDeseja trocar o e-mail do comprador? Digite *0* para trocar`,
+              );
+              return;
             }
           } else {
             await enviar("⏳ Extraindo dados do produto... Aguarde um momento.");
