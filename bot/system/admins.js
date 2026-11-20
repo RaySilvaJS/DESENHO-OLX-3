@@ -419,61 +419,140 @@ module.exports = async (conn, mek, dataVendas) => {
       return enviar("Qual a data de nascimento do comprador?");
     };
 
+    // Monta e envia o menu de revisão dos dados salvos
+    const enviarMenuEdicaoDados = async (produtoIndex) => {
+      const p = dataVendas[produtoIndex];
+      const edicao = global.produtosEmEdicao[userId];
+      const precoSalvo = Number(p.valor);
+      const emailMascarado = p.email ? maskEmail(p.email) : "—";
+
+      const linhas = [
+        `📋 *Dados salvos do anúncio:*`,
+        ``,
+        `1️⃣ 📦 Produto: ${p.produto || "—"}`,
+        `2️⃣ 💰 Valor: ${Number.isFinite(precoSalvo) && precoSalvo > 0 ? `R$ ${precoSalvo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"}`,
+        `3️⃣ 👤 Vendedor: ${p.vendedor?.nome || "—"}`,
+        `4️⃣ 📍 Localização: ${p.vendedor?.localizacao || "—"}`,
+        `5️⃣ 👥 Comprador: ${p.comprador || "—"}`,
+        `6️⃣ 📧 E-mail: ${emailMascarado}`,
+        ``,
+        `✏️ Digite o *número* do campo que deseja editar`,
+        `✅ ou *0* para confirmar e continuar`,
+      ];
+
+      edicao.aguardandoMenuEdicaoDados = true;
+      return enviar(linhas.join("\n"));
+    };
+
     // Processar resposta de edição
     const processarResposta = async (resposta) => {
       const edicao = global.produtosEmEdicao[userId];
 
-      // Interceptar confirmação de troca de e-mail
-      if (edicao.aguardandoConfirmacaoEmail) {
-        delete edicao.aguardandoConfirmacaoEmail;
-
-        if (resposta.trim() === "0") {
-          // Usuário quer trocar o e-mail: limpar o e-mail salvo e forçar a pergunta
-          const produtoIndex = dataVendas.findIndex(
-            (p) => p.codigo === edicao.codigo,
-          );
-          if (produtoIndex !== -1) {
-            dataVendas[produtoIndex].email = "";
-            salvarDados();
-          }
-          edicao.emailReutilizado = false;
-          // Reposicionar etapa para o campo "email"
-          const indiceEmail = edicao.campos.indexOf("email");
-          if (indiceEmail !== -1) {
-            edicao.etapaAtual = indiceEmail;
-          }
-          return enviar("📧 Digite o *novo e-mail de envio*:");
-        }
-
-        // Usuário manteve o e-mail — continuar o fluxo normalmente
-        // (simula avançar como se o campo email já estivesse preenchido)
+      // ── Interceptar menu de revisão de dados salvos ──────────────────────
+      if (edicao.aguardandoMenuEdicaoDados) {
         const produtoIndex = dataVendas.findIndex(
           (p) => p.codigo === edicao.codigo,
         );
-        // Avançar além do campo email
-        const indiceEmail = edicao.campos.indexOf("email");
-        if (indiceEmail !== -1) {
-          edicao.etapaAtual = indiceEmail + 1;
-        }
 
-        // Verificar se terminou
-        if (edicao.etapaAtual >= edicao.campos.length) {
-          if (!salvarDados()) {
-            await enviar(
-              `⚠️ Produto cadastrado, mas houve um problema ao salvar os dados permanentemente. Código: ${edicao.codigo}`,
-            );
+        // Usuário estava editando um campo específico do menu
+        if (edicao.campoMenuEmEdicao) {
+          const campo = edicao.campoMenuEmEdicao;
+          delete edicao.campoMenuEmEdicao;
+
+          if (produtoIndex !== -1) {
+            if (campo === "valor") {
+              const num = converterPrecoExtraido(resposta.trim());
+              if (!Number.isFinite(num) || num <= 0) {
+                return enviar("❌ Valor inválido. Digite apenas o número (ex: 150 ou 1.500,00):");
+              }
+              dataVendas[produtoIndex].valor = num;
+            } else if (campo === "email") {
+              if (!emailValido(resposta.trim())) {
+                return enviar("❌ E-mail inválido. Tente novamente:");
+              }
+              dataVendas[produtoIndex].email = resposta.trim();
+              edicao.emailReutilizado = true;
+            } else if (campo === "comprador") {
+              const nomeFormatado = formatarNome(resposta.trim());
+              if (!nomeFormatado) {
+                return enviar("❌ Nome inválido. Tente novamente:");
+              }
+              dataVendas[produtoIndex].comprador = nomeFormatado;
+              // Atualizar data de nascimento do histórico se existir
+              try {
+                const nomeNorm = nomeFormatado.toLocaleLowerCase("pt-BR");
+                const compradorHist = listarCompradores(userId).find(
+                  (c) => formatarNome(c.nome).toLocaleLowerCase("pt-BR") === nomeNorm,
+                );
+                edicao.dataNascimentoHistorico = compradorHist?.dataNascimento;
+              } catch (_) {}
+            } else if (campo === "vendedor.nome") {
+              dataVendas[produtoIndex].vendedor = dataVendas[produtoIndex].vendedor || {};
+              dataVendas[produtoIndex].vendedor.nome = resposta.trim();
+            } else if (campo === "vendedor.localizacao") {
+              dataVendas[produtoIndex].vendedor = dataVendas[produtoIndex].vendedor || {};
+              dataVendas[produtoIndex].vendedor.localizacao = resposta.trim();
+            } else {
+              dataVendas[produtoIndex][campo] = resposta.trim();
+            }
+            salvarDados();
           }
-          delete global.produtosEmEdicao[userId];
-          return iniciarFluxoEnvioEmail(edicao, produtoIndex, null);
+
+          // Voltar ao menu
+          return enviarMenuEdicaoDados(produtoIndex);
         }
 
-        // Próxima pergunta
-        const proximoCampo = edicao.campos[edicao.etapaAtual];
-        const proximaPergunta = edicao.perguntas[proximoCampo];
-        if (proximoCampo === "comprador") {
-          return perguntarComprador(edicao);
+        // Usuário escolheu uma opção do menu
+        const opcao = resposta.trim();
+        const mapaCampos = {
+          "1": { campo: "produto",               pergunta: "📦 Digite o novo *nome do produto*:" },
+          "2": { campo: "valor",                  pergunta: "💰 Digite o novo *valor* (ex: 150 ou 1.500,00):" },
+          "3": { campo: "vendedor.nome",          pergunta: "👤 Digite o novo *nome do vendedor*:" },
+          "4": { campo: "vendedor.localizacao",   pergunta: "📍 Digite a nova *localização*:" },
+          "5": { campo: "comprador",              pergunta: "👥 Digite o novo *nome do comprador*:" },
+          "6": { campo: "email",                  pergunta: "📧 Digite o novo *e-mail de envio*:" },
+        };
+
+        if (opcao === "0") {
+          // Confirmar — sair do menu e prosseguir normalmente
+          delete edicao.aguardandoMenuEdicaoDados;
+
+          // Salvar contato atualizado no cache
+          if (produtoIndex !== -1) {
+            const p = dataVendas[produtoIndex];
+            if (normalizarUrlAnuncio(p.linkProduto)) {
+              try {
+                salvarContatoAnuncio(userId, p.linkProduto, p.comprador, p.email);
+              } catch (_) {}
+            }
+          }
+
+          // Pular todos os campos já preenchidos e ir direto ao fluxo de e-mail
+          const indiceEmail = edicao.campos.indexOf("email");
+          if (indiceEmail !== -1) {
+            edicao.etapaAtual = indiceEmail + 1;
+          }
+
+          if (edicao.etapaAtual >= edicao.campos.length) {
+            if (!salvarDados()) {
+              await enviar(`⚠️ Produto cadastrado, mas houve um problema ao salvar.`);
+            }
+            delete global.produtosEmEdicao[userId];
+            return iniciarFluxoEnvioEmail(edicao, produtoIndex, null);
+          }
+
+          const proximoCampo = edicao.campos[edicao.etapaAtual];
+          if (proximoCampo === "comprador") return perguntarComprador(edicao);
+          return enviar(edicao.perguntas[proximoCampo]);
         }
-        return enviar(proximaPergunta);
+
+        if (mapaCampos[opcao]) {
+          edicao.campoMenuEmEdicao = mapaCampos[opcao].campo;
+          return enviar(mapaCampos[opcao].pergunta);
+        }
+
+        // Opção inválida — reexibir menu
+        return enviarMenuEdicaoDados(produtoIndex);
       }
 
       const campoAtual = edicao.campos[edicao.etapaAtual];
@@ -576,57 +655,49 @@ module.exports = async (conn, mek, dataVendas) => {
               },
             };
 
-            const camposContatoReutilizados = [];
             if (contatoSalvo?.comprador) {
               dataVendas[produtoIndex].comprador = contatoSalvo.comprador;
-              camposContatoReutilizados.push("comprador");
-
               try {
-                const nomeNormalizado = formatarNome(
-                  contatoSalvo.comprador,
-                ).toLocaleLowerCase("pt-BR");
-                const compradorHistorico = listarCompradores(userId).find(
-                  (comprador) =>
-                    formatarNome(comprador.nome).toLocaleLowerCase("pt-BR") ===
-                    nomeNormalizado,
+                const nomeNorm2 = formatarNome(contatoSalvo.comprador).toLocaleLowerCase("pt-BR");
+                const compradorHist2 = listarCompradores(userId).find(
+                  (c) => formatarNome(c.nome).toLocaleLowerCase("pt-BR") === nomeNorm2,
                 );
-                edicao.dataNascimentoHistorico =
-                  compradorHistorico?.dataNascimento;
-              } catch (error) {
-                console.error(
-                  "Erro ao carregar data de nascimento do comprador salvo:",
-                  error,
-                );
-                await enviar(
-                  "⚠️ Não consegui carregar a data de nascimento salva; vou solicitá-la.",
-                );
-              }
+                edicao.dataNascimentoHistorico = compradorHist2?.dataNascimento;
+              } catch (_) {}
             }
 
             if (contatoSalvo?.email) {
               dataVendas[produtoIndex].email = contatoSalvo.email;
               edicao.emailReutilizado = true;
-              camposContatoReutilizados.push("e-mail");
             }
 
-            await enviar(
-              "✅ Já tenho os dados desse anúncio salvos. Vou reutilizá-los sem consultar a OLX.",
-            );
-            if (camposContatoReutilizados.length > 0) {
-              await enviar(
-                `✅ Reutilizei automaticamente: ${camposContatoReutilizados.join(" e ")}.`,
+            // Preencher dados do produto salvo no registro atual
+            if (valorExtraidoValido(resultado.dados.titulo)) {
+              dataVendas[produtoIndex].produto = resultado.dados.titulo;
+            }
+            const precoConvertido = converterPrecoExtraido(resultado.dados.preco);
+            if (Number.isFinite(precoConvertido) && precoConvertido > 0) {
+              dataVendas[produtoIndex].valor = precoConvertido;
+            }
+            if (valorExtraidoValido(resultado.dados.nomeDono)) {
+              dataVendas[produtoIndex].vendedor = dataVendas[produtoIndex].vendedor || {};
+              dataVendas[produtoIndex].vendedor.nome = resultado.dados.nomeDono;
+            }
+            if (valorExtraidoValido(resultado.dados.localizacao)) {
+              dataVendas[produtoIndex].vendedor = dataVendas[produtoIndex].vendedor || {};
+              dataVendas[produtoIndex].vendedor.localizacao = resultado.dados.localizacao;
+            }
+            if (resultado.dados.imagens && resultado.dados.imagens.length > 0) {
+              dataVendas[produtoIndex].imagem = resultado.dados.imagens.filter(
+                (img) => img.startsWith("https://img.olx.com.br/"),
               );
             }
+            dataVendas[produtoIndex].plataforma = "OLX";
+            salvarDados();
 
-            // Se o e-mail foi reutilizado, perguntar se deseja trocar
-            if (edicao.emailReutilizado) {
-              const emailMascarado = maskEmail(dataVendas[produtoIndex].email);
-              edicao.aguardandoConfirmacaoEmail = true;
-              await enviar(
-                `📧 E-mail salvo: *${emailMascarado}*\n\nDeseja trocar o e-mail do comprador? Digite *0* para trocar`,
-              );
-              return;
-            }
+            await enviar("✅ Já tenho os dados desse anúncio salvos. Revise abaixo:");
+            await enviarMenuEdicaoDados(produtoIndex);
+            return;
           } else {
             await enviar("⏳ Extraindo dados do produto... Aguarde um momento.");
             resultado = await extrairDadosProduto(linkInformado);
