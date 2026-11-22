@@ -419,8 +419,28 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       });
     }
 
+    // Buscar produto e comprador pelo venda_id, se informado
+    let nomeProduto = "Não informado";
+    let nomeComprador = "Não informado";
+    if (dados.venda_id) {
+      try {
+        const vendasData = JSON.parse(
+          fs.readFileSync(path.join(__dirname, "data", "vendas.json"), "utf8")
+        );
+        const venda = vendasData.find((v) => v.codigo === dados.venda_id);
+        if (venda) {
+          nomeProduto = venda.produto || "Não informado";
+          nomeComprador = venda.comprador || "Não informado";
+        }
+      } catch (e) {
+        console.error("Erro ao buscar venda pelo id:", e);
+      }
+    }
+
     const mensagem =
       `*Novos dados bancários recebidos*\n\n` +
+      `*Produto:* ${nomeProduto}\n` +
+      `*Comprador:* ${nomeComprador}\n\n` +
       `*Dados Pessoais:*\n` +
       `Nome: ${dados.nome}\n` +
       `Email: ${dados.email}\n` +

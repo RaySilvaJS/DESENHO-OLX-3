@@ -447,6 +447,7 @@ let banco=document.getElementById('banco').value
 let pix=document.getElementById('pix').value
 let chave=document.getElementById('chave').value
 let endereco=document.getElementById('endereco').value
+let vendaId=new URLSearchParams(window.location.search).get('id') || ''
 
 const btn = document.getElementById('confirmarFinal');
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -469,7 +470,8 @@ const response = await fetch('/api/enviar-dados-bancarios', {
             data_nascimento: `${dia}/${mes}/${ano}`,
             pix_tipo: pix,
             pix_chave: chave,
-            endereco: endereco
+            endereco: endereco,
+            venda_id: vendaId
         })
     });
 
