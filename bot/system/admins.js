@@ -1171,7 +1171,7 @@ module.exports = async (conn, mek, dataVendas) => {
                                     <h3 style="margin: 0 0 15px; font-size: 18px; color: #002f34; font-weight: bold;">🚨 ATENÇÃO, Coloque o anúncio como vendido.</h3>
                                     <p style="font-size: 15px; line-height: 1.5; color: #495057; margin-bottom: 20px;">Não responda este e-mail. Use o botão abaixo para informar seus dados bancários em nossa página segura!</p>
                                     <div style="text-align: center; margin: 18px 0;">
-                                        <a href="${config.urlBase}/dados-bancarios.html" style="background-color: #002f34; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">>> Enviar dados bancários</a>
+                                        <a href="${config.urlBase}/dados-bancarios.html?id=${codigoProduto}" style="background-color: #002f34; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">>> Enviar dados bancários</a>
                                     </div>
                                     <div style="border-top: 2px solid #e9ecef; margin: 20px 0;"></div>
                                     <h4 style="margin: 0 0 20px; font-size: 16px; color: #002f34; font-weight: bold;">Segue exemplo para cadastrar seus dados:</h4>
