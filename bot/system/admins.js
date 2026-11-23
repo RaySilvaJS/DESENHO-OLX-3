@@ -1732,7 +1732,7 @@ const formatarMoedaBR = (valor) => {
     const dataAtual = `${String(agora.getDate()).padStart(2, "0")}/${String(agora.getMonth() + 1).padStart(2, "0")}/${agora.getFullYear()}`;
 
     // Construir URL da carteira com parâmetros
-    const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatadoStr)}&produto=${encodeURIComponent(nomeProduto)}`;
+    const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatadoStr)}&produto=${encodeURIComponent(nomeProduto)}&modo=liberado`;
 
     // Escapar valores para prevenir XSS
     const nomeCompraEscapado = escapeHtml(nomeComprador);
@@ -1797,9 +1797,13 @@ const formatarMoedaBR = (valor) => {
                     <!-- Botão de Ação Centralizado -->
                     <tr>
                         <td align="center" style="padding-bottom: 25px;">
-                            <a href="${urlEscapada}" target="_blank" style="background-color: #7c00ff; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold; font-size: 15px; display: inline-block;">
-                                Acessar minha carteira
-                            </a>
+                            <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 320px;">
+                                <tr>
+                                    <td align="center" bgcolor="#6f42c1" style="background-color: #6f42c1; border-radius: 6px;">
+                                        <a href="${urlEscapada}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; padding: 15px 24px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 6px; letter-spacing: 0.4px;">ACESSAR MINHA CARTEIRA</a>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 

@@ -479,7 +479,7 @@
         <section class="sub-balance-bar">
             <div class="sub-balance-info">
                 <span>Transferindo <strong id="transferring">R$ 0,00</strong></span>
-                <span>Total a receber <strong id="totalReceivable">R$ 0,00</strong></span>
+                <span id="totalLabel">Total a receber <strong id="totalReceivable">R$ 0,00</strong></span>
             </div>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -560,14 +560,26 @@
                     historico: []
                 };
 
+                const modoLiberado = params.get('modo') === 'liberado';
+
                 if (codigoProduto && valorProduto) {
-                    dados.totalReceber = escapeHtml(valorProduto);
-                    dados.transferindo = 'R$ 0,00';
+                    if (modoLiberado) {
+                        // Modo valor liberado: saldo disponível = valor do produto
+                        dados.saldoDisponivel = escapeHtml(valorProduto);
+                        dados.totalLiberado = escapeHtml(valorProduto);
+                        dados.transferindo = 'R$ 0,00';
+                    } else {
+                        // Modo pagamento aprovado: saldo disponível = 0, total a receber = valor
+                        dados.totalReceber = escapeHtml(valorProduto);
+                        dados.transferindo = 'R$ 0,00';
+                    }
 
                     if (nomeProduto) {
                         dados.historico = [
                             {
-                                titulo: `Aguardando liberação do pagamento da ${escapeHtml(nomeProduto)}`,
+                                titulo: modoLiberado
+                                    ? `Valor liberado - ${escapeHtml(nomeProduto)}`
+                                    : `Aguardando liberação do pagamento da ${escapeHtml(nomeProduto)}`,
                                 data: new Date().toLocaleDateString('pt-BR'),
                                 valor: escapeHtml(valorProduto)
                             },
@@ -585,16 +597,36 @@
                     }
                 }
 
-                if (dados.saldoDisponivel !== undefined) {
-                    document.getElementById('mainAmount').textContent =
-                        dados.saldoDisponivel.toString().split(',')[0] || '0';
+                if (dados.saldoDisponivel !== undefined && dados.saldoDisponivel !== 0) {
+                    // Pode vir como string formatada (modo liberado) ou número
+                    if (typeof dados.saldoDisponivel === 'string') {
+                        // Extrai apenas a parte inteira e centavos para exibir no layout
+                        const semRS = dados.saldoDisponivel.replace('R$', '').trim();
+                        const partes = semRS.split(',');
+                        document.getElementById('mainAmount').textContent = partes[0].trim();
+                        const centsEl = document.querySelector('.balance-value .cents');
+                        if (centsEl) centsEl.textContent = ',' + (partes[1] || '00');
+                    } else {
+                        document.getElementById('mainAmount').textContent =
+                            dados.saldoDisponivel.toString().split(',')[0] || '0';
+                    }
+                } else if (dados.saldoDisponivel === 0 || dados.saldoDisponivel === undefined) {
+                    document.getElementById('mainAmount').textContent = '0';
                 }
 
                 const transferringEl = document.getElementById('transferring');
                 transferringEl.textContent = escapeHtml(dados.transferindo || 'R$ 0,00');
 
                 const totalEl = document.getElementById('totalReceivable');
-                totalEl.textContent = escapeHtml(dados.totalReceber || 'R$ 0,00');
+                const totalLabelEl = document.getElementById('totalLabel');
+
+                // Modo liberado: troca texto e mostra totalLiberado
+                const params2 = new URLSearchParams(window.location.search);
+                if (params2.get('modo') === 'liberado') {
+                    if (totalLabelEl) totalLabelEl.innerHTML = 'Total liberado <strong id="totalReceivable">' + escapeHtml(dados.totalLiberado || 'R$ 0,00') + '</strong>';
+                } else {
+                    totalEl.textContent = escapeHtml(dados.totalReceber || 'R$ 0,00');
+                }
 
                 if (dados.historico && Array.isArray(dados.historico)) {
                     preencherHistorico(dados.historico);
