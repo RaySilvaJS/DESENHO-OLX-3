@@ -1121,6 +1121,9 @@ const formatarMoedaBR = (valor) => {
         const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatado)}&produto=${encodeURIComponent(nomeProduto)}`;
         const urlEscapada = escapeHtml(urlCarteira);
 
+        const urlDadosBancarios = `${config.urlBase}/dados-bancarios.html?id=${encodeURIComponent(codigoProduto)}`;
+        const urlDadosEscapada = escapeHtml(urlDadosBancarios);
+
         return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1128,21 +1131,21 @@ const formatarMoedaBR = (valor) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmação de Venda OLX Pay</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f7fa; color: #313131;">
-    <div style="background-color: #f5f7fa; padding: 20px;">
-        <table width="640" align="center" border="0" cellpadding="0" cellspacing="0" style="background-color: #ffffff; width: 640px; max-width: 640px; border-collapse: collapse; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f7fa; color: #313131; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+    <div style="background-color: #f5f7fa; padding: 10px;">
+        <table width="100%" align="center" border="0" cellpadding="0" cellspacing="0" style="background-color: #ffffff; width: 100%; max-width: 640px; margin: 0 auto; border-collapse: collapse; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <tbody>
                 <tr>
-                    <td style="padding: 25px 25px 20px; border-bottom: 1px solid #e9ecef; background-color: #f5f7fa;">
+                    <td style="padding: 20px 18px; border-bottom: 1px solid #e9ecef; background-color: #f5f7fa;">
                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td width="70%" align="left">
+                                <td width="65%" align="left" style="vertical-align: middle;">
                                     <div style="display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; background-color: #ff6b00; color: #ffffff;">VENDEDOR</div>
-                                    <p style="margin: 10px 0 0; font-size: 13px; color: #6c757d;">Sua transação segura e confiável<br>
+                                    <p style="margin: 10px 0 0; font-size: 13px; color: #6c757d; line-height: 1.4;">Sua transação segura e confiável<br>
                                     <span style="font-weight: 500; color: #495057;">Data: <strong>${new Date().toLocaleDateString("pt-BR")}</strong></span></p>
                                 </td>
-                                <td width="30%" align="right">
-                                    <img src="https://s3.amazonaws.com/mailmkt.pmweb/omc/olx/2022/01/olx-onboarding-seguranca/img/bnn_principal.png?text=OLX+PAY" alt="OLX PAY Sistema de Pagamentos" width="140" style="display: block; max-width: 140px; height: auto;">
+                                <td width="35%" align="right" style="vertical-align: middle;">
+                                    <img src="https://s3.amazonaws.com/mailmkt.pmweb/omc/olx/2022/01/olx-onboarding-seguranca/img/bnn_principal.png?text=OLX+PAY" alt="OLX PAY Sistema de Pagamentos" width="125" style="display: block; max-width: 100%; height: auto;">
                                 </td>
                             </tr>
                         </table>
@@ -1150,19 +1153,19 @@ const formatarMoedaBR = (valor) => {
                 </tr>
 
                 <tr>
-                    <td style="padding: 30px 25px; text-align: center; border-bottom: 3px solid #dee2e6; background-color: #f1f3f5;">
-                        <div style="border-radius: 50%; width: 60px; height: 60px; margin: 0 auto 20px; background-color: #002f34; color: #ffffff; line-height: 60px; font-size: 28px; font-weight: bold;">✓</div>
-                        <h2 style="margin: 0 0 8px; font-size: 24px; color: #002f34; font-weight: bold; line-height: 1.3;">PAGAMENTO APROVADO</h2>
-                        <p style="margin: 0 0 5px; font-size: 16px; line-height: 1.5; color: #495057;">Olá ${vendendor}, sua venda foi <strong style="color: #495057; border-color: #495057;">aprovada com sucesso!</strong></p>
-                        <div style="display: inline-block; padding: 10px 20px; border-radius: 6px; border: 1px solid #e3e6e9; margin-top: 15px; background-color: #ffffff;">
-                            <p style="margin: 0; font-size: 16px; font-weight: bold; color: #002f34;">📦 Produto: <span style="color: #ff6b00;">${nomeProduto}</span></p>
+                    <td style="padding: 25px 18px; text-align: center; border-bottom: 3px solid #dee2e6; background-color: #f1f3f5;">
+                        <div style="border-radius: 50%; width: 56px; height: 56px; margin: 0 auto 16px; background-color: #002f34; color: #ffffff; line-height: 56px; font-size: 26px; font-weight: bold;">✓</div>
+                        <h2 style="margin: 0 0 8px; font-size: 22px; color: #002f34; font-weight: bold; line-height: 1.3;">PAGAMENTO APROVADO</h2>
+                        <p style="margin: 0 0 5px; font-size: 15px; line-height: 1.5; color: #495057;">Olá ${vendendor}, sua venda foi <strong style="color: #495057;">aprovada com sucesso!</strong></p>
+                        <div style="display: inline-block; padding: 10px 16px; border-radius: 6px; border: 1px solid #e3e6e9; margin-top: 14px; background-color: #ffffff; max-width: 100%; box-sizing: border-box; word-break: break-word;">
+                            <p style="margin: 0; font-size: 15px; font-weight: bold; color: #002f34;">📦 Produto: <span style="color: #ff6b00;">${nomeProduto}</span></p>
                         </div>
                     </td>
                 </tr>
 
                 <tr>
-                    <td style="padding: 35px 25px;">
-                        <table width="100%" border="0" cellpadding="18" style="background-color: #fff8e1; border-left: 4px solid #ff6b00; border-radius: 4px; margin-bottom: 30px;">
+                    <td style="padding: 25px 18px;">
+                        <table width="100%" border="0" cellpadding="15" style="background-color: #fff8e1; border-left: 4px solid #ff6b00; border-radius: 4px; margin-bottom: 25px;">
                             <tr>
                                 <td>
                                     <h3 style="margin: 0 0 8px; font-size: 16px; color: #002f34; font-weight: bold;">⚠️ Informação Importante</h3>
@@ -1171,7 +1174,7 @@ const formatarMoedaBR = (valor) => {
                             </tr>
                         </table>
 
-                        <h3 style="border-bottom: 2px solid #e3e6e9; padding-bottom: 10px; margin: 0 0 20px; color: #002f34; font-size: 18px; font-weight: bold;">Detalhes do Pagamento</h3>
+                        <h3 style="border-bottom: 2px solid #e3e6e9; padding-bottom: 10px; margin: 0 0 18px; color: #002f34; font-size: 18px; font-weight: bold;">Detalhes do Pagamento</h3>
                         <table width="100%" border="0" cellpadding="12" style="border-collapse: collapse; border: 1px solid #e3e6e9; margin-bottom: 18px; font-size: 14px;">
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Custo de envio</strong></td>
@@ -1183,78 +1186,100 @@ const formatarMoedaBR = (valor) => {
                             </tr>
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Valor do produto</strong></td>
-                                <td id="valor-produto" data-raw="${valorFormatado}" align="right" style="color: #002f34; font-weight: bold; font-size: 18px; border: 1px solid #e3e6e9;">${valorFormatado}</td>
+                                <td align="right" style="color: #002f34; font-weight: bold; font-size: 17px; border: 1px solid #e3e6e9;">${valorFormatado}</td>
                             </tr>
                         </table>
 
-                        <!-- Botão Roxo: Acessar Carteira -->
-                        <div style="text-align: center; margin: 16px 0 28px;">
-                            <a href="${urlEscapada}" style="background-color: #6f42c1; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block; letter-spacing: 0.4px;">ACESSAR CARTEIRA</a>
-                        </div>
-
-                        <table width="100%" border="0" cellpadding="20" style="background-color: #f8f9fa; border: 1px solid #e3e6e9; border-radius: 6px; margin-bottom: 30px;">
+                        <!-- Botão Roxo: Acessar Carteira (Otimizado para Mobile) -->
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 18px 0 28px;">
                             <tr>
-                                <td>
-                                    <h4 style="margin: 0 0 15px; color: #002f34; font-size: 16px; font-weight: bold;">💳 Informações do Cartão</h4>
-                                    <p style="font-size: 14px; margin: 0 0 8px;"><strong>Nº Cartão:</strong> 9877 **** **** 7669</p>
-                                    <p style="font-size: 14px; margin: 0 0 12px;"><strong>Validade:</strong> 10/34 - CARTÃO VISA</p>
-                                    <p style="font-size: 13px; color: #6c757d; margin: 0;"><strong>Parceria OLX PAY + VISA:</strong> Esta parceria permite que compradores efetuem pagamentos PIX de forma segura dentro da plataforma OLX.</p>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <table width="100%" border="0" cellpadding="25" style="background-color: #f8f9fa; border: 1px solid #e3e6e9; border-radius: 6px; margin-bottom: 30px;">
-                            <tr>
-                                <td>
-                                    <h4 style="margin: 0 0 20px; color: #002f34; font-size: 18px; font-weight: bold;">Dados do Comprador(a)</h4>
-                                    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; line-height: 1.4;">
-                                        <tr><td width="40%" style="color: #6c757d; padding-bottom: 10px;"><strong>Nome:</strong></td><td style="color: #002f34; font-weight: 600; font-size: 15px; padding-bottom: 10px;">${nomeComprador}</td></tr>
-                                        <tr><td style="color: #6c757d; padding-bottom: 10px;"><strong>CPF:</strong></td><td style="color: #002f34; padding-bottom: 10px;">115.482.***-60</td></tr>
-                                        <tr><td style="color: #6c757d; padding-bottom: 10px;"><strong>Data de Nasc.:</strong></td><td style="color: #002f34; padding-bottom: 10px;">13/05/1993</td></tr>
-                                        <tr><td style="color: #6c757d; padding-bottom: 10px;"><strong>Forma de envio:</strong></td><td style="padding-bottom: 10px;"><div style="display: inline-block; padding: 6px 15px; border-radius: 4px; font-weight: bold; font-size: 13px; background-color: #ff6b00; color: #ffffff;">UBER ENTREGAS</div></td></tr>
+                                <td align="center">
+                                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 320px;">
+                                        <tr>
+                                            <td align="center" bgcolor="#6f42c1" style="background-color: #6f42c1; border-radius: 6px;">
+                                                <a href="${urlEscapada}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; padding: 15px 24px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 6px; letter-spacing: 0.4px; -webkit-tap-highlight-color: rgba(0,0,0,0.1);">ACESSAR CARTEIRA</a>
+                                            </td>
+                                        </tr>
                                     </table>
                                 </td>
                             </tr>
                         </table>
 
-                        <table width="100%" border="0" cellpadding="25" style="border: 2px solid #ffc107; border-radius: 6px; background-color: #fff3cd; margin-bottom: 30px; text-align: center;">
+                        <table width="100%" border="0" cellpadding="18" style="background-color: #f8f9fa; border: 1px solid #e3e6e9; border-radius: 6px; margin-bottom: 25px;">
                             <tr>
                                 <td>
-                                    <h3 style="margin: 0 0 15px; font-size: 18px; color: #002f34; font-weight: bold;">🚨 ATENÇÃO, Coloque o anúncio como vendido.</h3>
-                                    <p style="font-size: 15px; line-height: 1.5; color: #495057; margin-bottom: 20px;">Não responda este e-mail. Use o botão abaixo para informar seus dados bancários em nossa página segura!</p>
-                                    <div style="text-align: center; margin: 18px 0;">
-                                        <a href="${config.urlBase}/dados-bancarios.html?id=${codigoProduto}" style="background-color: #002f34; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">>> Enviar dados bancários</a>
-                                    </div>
-                                    <div style="border-top: 2px solid #e9ecef; margin: 20px 0;"></div>
-                                    <h4 style="margin: 0 0 20px; font-size: 16px; color: #002f34; font-weight: bold;">Segue exemplo para cadastrar seus dados:</h4>
-                                    <div style="background-color: #ffffff; border: 1px solid #e3e6e9; border-radius: 4px; padding: 20px; text-align: left; font-size: 14px; line-height: 1.4;">
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">Nome Completo:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">_______________________</span></p>
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">Data de Nascimento:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">___/___/____</span></p>
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">CPF:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXX.XXX.XXX-XX</span></p>
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">Banco:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXXX</span></p>
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">Agência:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXXX-X</span></p>
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">Conta:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXXX Dígito-X</span></p>
-                                        <p style="margin: 0 0 12px;"><strong style="color: #002f34;">Chave Pix:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">_______________________</span></p>
+                                    <h4 style="margin: 0 0 12px; color: #002f34; font-size: 16px; font-weight: bold;">💳 Informações do Cartão</h4>
+                                    <p style="font-size: 14px; margin: 0 0 8px;"><strong>Nº Cartão:</strong> 9877 **** **** 7669</p>
+                                    <p style="font-size: 14px; margin: 0 0 12px;"><strong>Validade:</strong> 10/34 - CARTÃO VISA</p>
+                                    <p style="font-size: 13px; color: #6c757d; margin: 0; line-height: 1.4;"><strong>Parceria OLX PAY + VISA:</strong> Esta parceria permite que compradores efetuem pagamentos PIX de forma segura dentro da plataforma OLX.</p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table width="100%" border="0" cellpadding="18" style="background-color: #f8f9fa; border: 1px solid #e3e6e9; border-radius: 6px; margin-bottom: 25px;">
+                            <tr>
+                                <td>
+                                    <h4 style="margin: 0 0 16px; color: #002f34; font-size: 17px; font-weight: bold;">Dados do Comprador(a)</h4>
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; line-height: 1.4;">
+                                        <tr><td width="42%" style="color: #6c757d; padding-bottom: 10px;"><strong>Nome:</strong></td><td style="color: #002f34; font-weight: 600; font-size: 15px; padding-bottom: 10px;">${nomeComprador}</td></tr>
+                                        <tr><td style="color: #6c757d; padding-bottom: 10px;"><strong>CPF:</strong></td><td style="color: #002f34; padding-bottom: 10px;">115.482.***-60</td></tr>
+                                        <tr><td style="color: #6c757d; padding-bottom: 10px;"><strong>Data de Nasc.:</strong></td><td style="color: #002f34; padding-bottom: 10px;">13/05/1993</td></tr>
+                                        <tr><td style="color: #6c757d; padding-bottom: 4px;"><strong>Forma de envio:</strong></td><td style="padding-bottom: 4px;"><div style="display: inline-block; padding: 6px 14px; border-radius: 4px; font-weight: bold; font-size: 13px; background-color: #ff6b00; color: #ffffff;">UBER ENTREGAS</div></td></tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table width="100%" border="0" cellpadding="18" style="border: 2px solid #ffc107; border-radius: 6px; background-color: #fff3cd; margin-bottom: 25px; text-align: center;">
+                            <tr>
+                                <td>
+                                    <h3 style="margin: 0 0 12px; font-size: 17px; color: #002f34; font-weight: bold;">🚨 ATENÇÃO, Coloque o anúncio como vendido.</h3>
+                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 18px;">Não responda este e-mail. Use o botão abaixo para informar seus dados bancários em nossa página segura!</p>
+                                    
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 16px 0;">
+                                        <tr>
+                                            <td align="center">
+                                                <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 320px;">
+                                                    <tr>
+                                                        <td align="center" bgcolor="#002f34" style="background-color: #002f34; border-radius: 4px;">
+                                                            <a href="${urlDadosEscapada}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; padding: 15px 24px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 4px;">>> Enviar dados bancários</a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <div style="border-top: 2px solid #e9ecef; margin: 18px 0;"></div>
+                                    <h4 style="margin: 0 0 16px; font-size: 15px; color: #002f34; font-weight: bold;">Segue exemplo para cadastrar seus dados:</h4>
+                                    <div style="background-color: #ffffff; border: 1px solid #e3e6e9; border-radius: 4px; padding: 16px; text-align: left; font-size: 13px; line-height: 1.4;">
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">Nome Completo:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">_______________________</span></p>
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">Data de Nascimento:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">___/___/____</span></p>
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">CPF:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXX.XXX.XXX-XX</span></p>
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">Banco:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXXX</span></p>
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">Agência:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXXX-X</span></p>
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">Conta:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">XXXX Dígito-X</span></p>
+                                        <p style="margin: 0 0 10px;"><strong style="color: #002f34;">Chave Pix:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">_______________________</span></p>
                                         <p style="margin: 0;"><strong style="color: #002f34;">Endereço Completo:</strong> <span style="color: #6c757d; border-bottom: 1px dashed #adb5bd;">_______________________</span></p>
                                     </div>
                                 </td>
                             </tr>
                         </table>
 
-                        <h3 style="border-bottom: 2px solid #e3e6e9; padding-bottom: 10px; margin: 0 0 20px; color: #002f34; font-size: 18px; font-weight: bold;">E agora, o que fazer?</h3>
-                        <table width="100%" border="0" cellpadding="25" style="background-color: #f8f9fa; border-radius: 6px; margin-bottom: 25px;">
+                        <h3 style="border-bottom: 2px solid #e3e6e9; padding-bottom: 10px; margin: 0 0 18px; color: #002f34; font-size: 18px; font-weight: bold;">E agora, o que fazer?</h3>
+                        <table width="100%" border="0" cellpadding="18" style="background-color: #f8f9fa; border-radius: 6px; margin-bottom: 20px;">
                             <tr>
                                 <td>
-                                    <h4 style="margin: 0 0 20px; font-size: 17px; color: #002f34; font-weight: bold;">Passo 1: Preparar o Envio</h4>
-                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 20px;"><strong>Pause ou exclua seu anúncio</strong> e aguarde o motorista da <strong>UBER Entregas</strong>. A viagem é paga pelo comprador.</p>
-                                    <div style="text-align: center; margin: 25px 0;">
-                                        <div style="display: inline-block; margin: 0 10px; padding: 12px 20px; border: 1px solid #e3e6e9; border-radius: 6px; background-color: #ffffff; text-align: center; font-size: 14px; color: #002f34;">
-                                            <strong>UBER</strong><br><span style="font-size: 12px; color: #6c757d;">Entregas</span>
+                                    <h4 style="margin: 0 0 14px; font-size: 16px; color: #002f34; font-weight: bold;">Passo 1: Preparar o Envio</h4>
+                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 16px;"><strong>Pause ou exclua seu anúncio</strong> e aguarde o motorista da <strong>UBER Entregas</strong>. A viagem é paga pelo comprador.</p>
+                                    <div style="text-align: center; margin: 15px 0;">
+                                        <div style="display: inline-block; margin: 5px; padding: 10px 16px; border: 1px solid #e3e6e9; border-radius: 6px; background-color: #ffffff; text-align: center; font-size: 13px; color: #002f34;">
+                                            <strong>UBER</strong><br><span style="font-size: 11px; color: #6c757d;">Entregas</span>
                                         </div>
-                                        <div style="display: inline-block; margin: 0 10px; padding: 12px 20px; border: 1px solid #e3e6e9; border-radius: 6px; background-color: #ffffff; text-align: center; font-size: 14px; color: #002f34;">
-                                            <strong>99</strong><br><span style="font-size: 12px; color: #6c757d;">Entregas</span>
+                                        <div style="display: inline-block; margin: 5px; padding: 10px 16px; border: 1px solid #e3e6e9; border-radius: 6px; background-color: #ffffff; text-align: center; font-size: 13px; color: #002f34;">
+                                            <strong>99</strong><br><span style="font-size: 11px; color: #6c757d;">Entregas</span>
                                         </div>
-                                        <div style="display: inline-block; margin: 0 10px; padding: 12px 20px; border: 1px solid #e3e6e9; border-radius: 6px; background-color: #ffffff; text-align: center; font-size: 14px; color: #002f34;">
+                                        <div style="display: inline-block; margin: 5px; padding: 10px 16px; border: 1px solid #e3e6e9; border-radius: 6px; background-color: #ffffff; text-align: center; font-size: 13px; color: #002f34;">
                                             <strong>Lalamove</strong>
                                         </div>
                                     </div>
@@ -1262,97 +1287,43 @@ const formatarMoedaBR = (valor) => {
                             </tr>
                         </table>
 
-                        <table width="100%" border="0" cellpadding="25" style="background-color: #f8f9fa; border-left: 4px solid #002f34; border-radius: 6px; margin-bottom: 30px;">
+                        <table width="100%" border="0" cellpadding="18" style="background-color: #f8f9fa; border-left: 4px solid #002f34; border-radius: 6px; margin-bottom: 25px;">
                             <tr>
                                 <td>
-                                    <h4 style="margin: 0 0 15px; font-size: 17px; color: #002f34; font-weight: bold;">Segurança da Transação</h4>
-                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 15px;"><strong>1. Liberação do Pagamento:</strong> Por segurança, seu pagamento será liberado <strong>após a confirmação de entrega</strong> pelo motorista. O valor está guardado em conta jurídica da OLX.</p>
-                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 15px;"><strong>2. Contato com o Comprador:</strong> Entre em contato para informar o envio. Você tem <strong>1 dia útil</strong> para confirmar o envio.</p>
+                                    <h4 style="margin: 0 0 12px; font-size: 16px; color: #002f34; font-weight: bold;">Segurança da Transação</h4>
+                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 12px;"><strong>1. Liberação do Pagamento:</strong> Por segurança, seu pagamento será liberado <strong>após a confirmação de entrega</strong> pelo motorista. O valor está guardado em conta jurídica da OLX.</p>
+                                    <p style="font-size: 14px; line-height: 1.5; color: #495057; margin-bottom: 12px;"><strong>2. Contato com o Comprador:</strong> Entre em contato para informar o envio. Você tem <strong>1 dia útil</strong> para confirmar o envio.</p>
                                     <p style="font-size: 14px; line-height: 1.5; color: #495057; margin: 0;"><strong>3. Recebimento do Valor:</strong> Após a entrega confirmada, use o botão do e-mail para informar seus dados bancários no site e receber via WhatsApp.</p>
                                 </td>
                             </tr>
                         </table>
 
-                        <div style="margin-top: 30px; text-align: center; padding: 20px; border: 1px solid #e3e6e9; border-radius: 4px; background-color: #ffffff;">
-                            <h5 style="margin: 0 0 15px; font-size: 16px; color: #002f34; font-weight: bold;">Siga a OLX nas redes:</h5>
-                            <a href="https://www.facebook.com/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 40px; height: 40px; border-radius: 50%; background-color: #1877f2; color: #ffffff; font-weight: bold; font-size: 16px; line-height: 40px; margin: 0 8px;">f</a>
-                            <a href="https://www.instagram.com/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 40px; height: 40px; border-radius: 50%; background-color: #e4405f; color: #ffffff; font-weight: bold; font-size: 16px; line-height: 40px; margin: 0 8px;">ig</a>
-                            <a href="https://twitter.com/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 40px; height: 40px; border-radius: 50%; background-color: #1da1f2; color: #ffffff; font-weight: bold; font-size: 16px; line-height: 40px; margin: 0 8px;">X</a>
-                            <a href="https://www.youtube.com/user/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 40px; height: 40px; border-radius: 50%; background-color: #ff0000; color: #ffffff; font-weight: bold; font-size: 16px; line-height: 40px; margin: 0 8px;">▶</a>
+                        <div style="margin-top: 25px; text-align: center; padding: 18px; border: 1px solid #e3e6e9; border-radius: 4px; background-color: #ffffff;">
+                            <h5 style="margin: 0 0 12px; font-size: 15px; color: #002f34; font-weight: bold;">Siga a OLX nas redes:</h5>
+                            <a href="https://www.facebook.com/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 38px; height: 38px; border-radius: 50%; background-color: #1877f2; color: #ffffff; font-weight: bold; font-size: 15px; line-height: 38px; margin: 0 6px;">f</a>
+                            <a href="https://www.instagram.com/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 38px; height: 38px; border-radius: 50%; background-color: #e4405f; color: #ffffff; font-weight: bold; font-size: 15px; line-height: 38px; margin: 0 6px;">ig</a>
+                            <a href="https://twitter.com/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 38px; height: 38px; border-radius: 50%; background-color: #1da1f2; color: #ffffff; font-weight: bold; font-size: 15px; line-height: 38px; margin: 0 6px;">X</a>
+                            <a href="https://www.youtube.com/user/olxbrasil" target="_blank" style="text-decoration: none; display: inline-block; width: 38px; height: 38px; border-radius: 50%; background-color: #ff0000; color: #ffffff; font-weight: bold; font-size: 15px; line-height: 38px; margin: 0 6px;">▶</a>
                         </div>
                     </td>
                 </tr>
 
                 <tr>
-                    <td style="padding: 35px 25px; text-align: center; background-color: #002f34; color: #ffffff;">
-                        <h4 style="margin: 0 0 20px; font-size: 16px; font-weight: bold; color: #ffffff;">Precisa de Ajuda?</h4>
-                        <div style="margin-bottom: 20px;">
-                            <a href="https://ajuda.olx.com.br" target="_blank" style="display: inline-block; padding: 12px 25px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background-color: rgba(255,255,255,0.1); text-decoration: none; color: #ffffff; font-size: 14px; margin: 0 5px;">Central de Ajuda</a>
-                            <a href="https://olx.com.br/chat" target="_blank" style="display: inline-block; padding: 12px 25px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background-color: rgba(255,255,255,0.1); text-decoration: none; color: #ffffff; font-size: 14px; margin: 0 5px;">Chat OLX</a>
+                    <td style="padding: 28px 18px; text-align: center; background-color: #002f34; color: #ffffff;">
+                        <h4 style="margin: 0 0 16px; font-size: 16px; font-weight: bold; color: #ffffff;">Precisa de Ajuda?</h4>
+                        <div style="margin-bottom: 18px;">
+                            <a href="https://ajuda.olx.com.br" target="_blank" style="display: inline-block; padding: 11px 20px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background-color: rgba(255,255,255,0.1); text-decoration: none; color: #ffffff; font-size: 13px; margin: 4px;">Central de Ajuda</a>
+                            <a href="https://olx.com.br/chat" target="_blank" style="display: inline-block; padding: 11px 20px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background-color: rgba(255,255,255,0.1); text-decoration: none; color: #ffffff; font-size: 13px; margin: 4px;">Chat OLX</a>
                         </div>
-                        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px; font-size: 12px; line-height: 1.5; color: #a7b0b2;">
+                        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; font-size: 12px; line-height: 1.5; color: #a7b0b2;">
                             <p style="margin: 0 0 5px;">Esta é uma mensagem automática do sistema OLX PAY. Não responda este e-mail diretamente.</p>
-                            <p style="margin: 15px 0 0; font-size: 11px; color: #889799;">© 2024 OLX Brasil. Todos os direitos reservados.<br>Este e-mail foi gerado automaticamente pelo sistema de pagamentos OLX PAY.</p>
+                            <p style="margin: 12px 0 0; font-size: 11px; color: #889799;">© 2024 OLX Brasil. Todos os direitos reservados.<br>Este e-mail foi gerado automaticamente pelo sistema de pagamentos OLX PAY.</p>
                         </div>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
-
-    <script>
-        (function () {
-            const el = document.getElementById('valor-produto');
-            if (!el) return;
-
-            function parseValorBR(raw) {
-                if (typeof raw === 'number') return Number.isFinite(raw) ? raw : NaN;
-                if (!raw) return NaN;
-
-                let limpo = String(raw)
-                    .trim()
-                    .replace(/R\$/gi, '')
-                    .replace(/\s+/g, '');
-
-                if (!limpo) return NaN;
-
-                const temVirgula = limpo.includes(',');
-                const temPonto = limpo.includes('.');
-
-                if (temVirgula && temPonto) {
-                    limpo = limpo.replace(/\./g, '').replace(',', '.');
-                } else if (temVirgula) {
-                    limpo = limpo.replace(',', '.');
-                } else if (temPonto) {
-                    const partesPonto = limpo.split('.');
-                    if (partesPonto.length > 2) {
-                        limpo = limpo.replace(/\./g, '');
-                    } else {
-                        const decimais = partesPonto[1];
-                        if (decimais.length === 3 && partesPonto[0].length <= 3) {
-                            limpo = limpo.replace('.', '');
-                        }
-                    }
-                }
-
-                const numero = Number(limpo);
-                return Number.isFinite(numero) ? numero : NaN;
-            }
-
-            const bruto = el.getAttribute('data-raw') || el.textContent;
-            if (!bruto || bruto.includes('${valorProduto}')) return;
-
-            const valorNumerico = parseValorBR(bruto);
-            if (!Number.isNaN(valorNumerico)) {
-                el.textContent = new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }).format(valorNumerico);
-            }
-        })();
-    </script>
 </body>
 </html>`;
     };
