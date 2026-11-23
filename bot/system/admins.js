@@ -1074,7 +1074,7 @@ module.exports = async (conn, mek, dataVendas) => {
     // Função para gerar HTML do email de PAGAMENTO APROVADO
 
     const gerarEmailPagamentoAprovado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
-       const urlCarteira = `${config.urlBase}/comprovante.html?codigo=${encodeURIComponent(codigoProduto)}`
+       const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}`
       const urlEscapada = escapeHtml(urlCarteira);
 
       return `<!DOCTYPE html>
