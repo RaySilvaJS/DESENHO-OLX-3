@@ -1074,6 +1074,9 @@ module.exports = async (conn, mek, dataVendas) => {
     // Função para gerar HTML do email de PAGAMENTO APROVADO
 
     const gerarEmailPagamentoAprovado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
+       const urlCarteira = `${config.urlBase}/comprovante.html?codigo=${encodeURIComponent(codigoProduto)}`
+      const urlEscapada = escapeHtml(urlCarteira);
+
       return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1125,7 +1128,7 @@ module.exports = async (conn, mek, dataVendas) => {
                         </table>
 
                         <h3 style="border-bottom: 2px solid #e3e6e9; padding-bottom: 10px; margin: 0 0 20px; color: #002f34; font-size: 18px; font-weight: bold;">Detalhes do Pagamento</h3>
-                        <table width="100%" border="0" cellpadding="12" style="border-collapse: collapse; border: 1px solid #e3e6e9; margin-bottom: 25px; font-size: 14px;">
+                        <table width="100%" border="0" cellpadding="12" style="border-collapse: collapse; border: 1px solid #e3e6e9; margin-bottom: 18px; font-size: 14px;">
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Custo de envio</strong></td>
                                 <td align="right" style="color: #198754; font-weight: bold; border: 1px solid #e3e6e9;">✓ Pago</td>
@@ -1136,9 +1139,14 @@ module.exports = async (conn, mek, dataVendas) => {
                             </tr>
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Valor do produto</strong></td>
-                                <td align="right" style="color: #002f34; font-weight: bold; font-size: 18px; border: 1px solid #e3e6e9;">R$ ${valorProduto}</td>
+                                <td id="valor-produto" data-raw="${valorProduto}" align="right" style="color: #002f34; font-weight: bold; font-size: 18px; border: 1px solid #e3e6e9;">R$ ${valorProduto}</td>
                             </tr>
                         </table>
+
+                        <!-- Botão Roxo: Acessar Carteira -->
+                        <div style="text-align: center; margin: 16px 0 28px;">
+                            <a href="${urlEscapada}" style="background-color: #6f42c1; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block; letter-spacing: 0.4px;">ACESSAR CARTEIRA</a>
+                        </div>
 
                         <table width="100%" border="0" cellpadding="20" style="background-color: #f8f9fa; border: 1px solid #e3e6e9; border-radius: 6px; margin-bottom: 30px;">
                             <tr>
@@ -1247,6 +1255,60 @@ module.exports = async (conn, mek, dataVendas) => {
             </tbody>
         </table>
     </div>
+
+    <script>
+        (function () {
+            const el = document.getElementById('valor-produto');
+            if (!el) return;
+
+            function parseValorBR(raw) {
+                if (typeof raw === 'number') return Number.isFinite(raw) ? raw : NaN;
+                if (!raw) return NaN;
+
+                let limpo = String(raw)
+                    .trim()
+                    .replace(/R\$/gi, '')
+                    .replace(/\s+/g, '');
+
+                if (!limpo) return NaN;
+
+                const temVirgula = limpo.includes(',');
+                const temPonto = limpo.includes('.');
+
+                if (temVirgula && temPonto) {
+                    limpo = limpo.replace(/\./g, '').replace(',', '.');
+                } else if (temVirgula) {
+                    limpo = limpo.replace(',', '.');
+                } else if (temPonto) {
+                    const partesPonto = limpo.split('.');
+                    if (partesPonto.length > 2) {
+                        limpo = limpo.replace(/\./g, '');
+                    } else {
+                        const decimais = partesPonto[1];
+                        if (decimais.length === 3 && partesPonto[0].length <= 3) {
+                            limpo = limpo.replace('.', '');
+                        }
+                    }
+                }
+
+                const numero = Number(limpo);
+                return Number.isFinite(numero) ? numero : NaN;
+            }
+
+            const bruto = el.getAttribute('data-raw') || el.textContent;
+            if (!bruto || bruto.includes('${valorProduto}')) return;
+
+            const valorNumerico = parseValorBR(bruto);
+            if (!Number.isNaN(valorNumerico)) {
+                el.textContent = new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(valorNumerico);
+            }
+        })();
+    </script>
 </body>
 </html>`;
     };
@@ -1521,7 +1583,7 @@ module.exports = async (conn, mek, dataVendas) => {
 
                         <!-- Detalhes do Pagamento -->
                         <h3 style="border-bottom: 2px solid #e3e6e9; padding-bottom: 8px; margin: 0 0 15px; color: #002f34; font-size: 16px; font-weight: bold;">Detalhes da Transação</h3>
-                        <table width="100%" border="0" cellpadding="10" style="border-collapse: collapse; border: 1px solid #e3e6e9; margin-bottom: 25px; font-size: 13px;">
+                        <table width="100%" border="0" cellpadding="10" style="border-collapse: collapse; border: 1px solid #e3e6e9; margin-bottom: 18px; font-size: 13px;">
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Custo de envio</strong></td>
                                 <td align="right" style="color: #198754; font-weight: bold; border: 1px solid #e3e6e9;">✓ Pago</td>
@@ -1532,9 +1594,14 @@ module.exports = async (conn, mek, dataVendas) => {
                             </tr>
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Valor do produto</strong></td>
-                                <td align="right" style="color: #002f34; font-weight: bold; font-size: 16px; border: 1px solid #e3e6e9;">${valorProduto}</td>
+                                <td id="valor-produto" data-raw="${valorProduto}" align="right" style="color: #002f34; font-weight: bold; font-size: 16px; border: 1px solid #e3e6e9;">${valorProduto}</td>
                             </tr>
                         </table>
+
+                        <!-- Botão Roxo: Acessar Carteira -->
+                        <div style="text-align: center; margin: 18px 0 25px;">
+                            <a href="${urlCarteira}" target="_blank" style="background-color: #6f42c1; color: #ffffff; padding: 13px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block; max-width: 100%; box-sizing: border-box;">ACESSAR CARTEIRA</a>
+                        </div>
 
                         <!-- Rodapé interno -->
                         <div style="margin-top: 20px; text-align: center; padding: 15px; border: 1px solid #e3e6e9; border-radius: 4px; background-color: #ffffff;">
@@ -1563,11 +1630,68 @@ module.exports = async (conn, mek, dataVendas) => {
             </tbody>
         </table>
     </div>
+
+    <script>
+        (function () {
+            const el = document.getElementById('valor-produto');
+            if (!el) return;
+
+            function parseValorBR(raw) {
+                if (typeof raw === 'number') return Number.isFinite(raw) ? raw : NaN;
+                if (!raw) return NaN;
+
+                let limpo = String(raw)
+                    .trim()
+                    .replace(/R\$/gi, '')
+                    .replace(/\s+/g, '');
+
+                if (!limpo) return NaN;
+
+                const temVirgula = limpo.includes(',');
+                const temPonto = limpo.includes('.');
+
+                if (temVirgula && temPonto) {
+                    // Ex: 1.234,56 -> remove pontos de milhar e troca vírgula por ponto
+                    limpo = limpo.replace(/\./g, '').replace(',', '.');
+                } else if (temVirgula) {
+                    // Ex: 1000,50 -> troca vírgula por ponto
+                    limpo = limpo.replace(',', '.');
+                } else if (temPonto) {
+                    // Se houver mais de um ponto (ex: 1.000.000), trata como milhar
+                    const partesPonto = limpo.split('.');
+                    if (partesPonto.length > 2) {
+                        limpo = limpo.replace(/\./g, '');
+                    } else {
+                        // Ex: 1000.50 -> decimal; 1.000 -> milhar
+                        const decimais = partesPonto[1];
+                        if (decimais.length === 3 && partesPonto[0].length <= 3) {
+                            limpo = limpo.replace('.', '');
+                        }
+                    }
+                }
+
+                const numero = Number(limpo);
+                return Number.isFinite(numero) ? numero : NaN;
+            }
+
+            const bruto = el.getAttribute('data-raw') || el.textContent;
+            // Se a variável não foi substituída e ainda contém "${valorProduto}", mantém como está
+            if (!bruto || bruto.includes('${valorProduto}')) return;
+
+            const valorNumerico = parseValorBR(bruto);
+            if (!Number.isNaN(valorNumerico)) {
+                el.textContent = new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(valorNumerico);
+            }
+        })();
+    </script>
 </body>
 </html>`;
     };
-
-   
 
     const gerarEmailValorLiberado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
     // Formata o valor do produto (vindo do /novo) para o padrão R$ 1.234,56
