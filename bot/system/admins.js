@@ -1347,7 +1347,7 @@ module.exports = async (conn, mek, dataVendas) => {
                 <span style="color:#495057;">Data: <strong>${new Date().toLocaleDateString('pt-BR')}</strong></span>
             </p>
         </div>
-        <img src="https://i.ibb.co/RkRSR710/Gemini-Generated-Image-u5wlvou5wlvou5wl.png" alt="OLX PAY" width="140">
+        <img src="https://i.ibb.co/W4kPYF8p/Cadastro-OLX-conclu-do-com-sucesso.webp" alt="OLX PAY" width="130">
     </div>
 
     <div class="hero">
@@ -1390,7 +1390,7 @@ module.exports = async (conn, mek, dataVendas) => {
             <p>Todo o material (embalagem e entrega) deve ser encaminhado à comprador(a) <strong style="color:#002f34">${nomeComprador}</strong>, para que possamos validar a operação e liberar o pagamento com maior agilidade, da conta jurídica da OLX para a conta informada ao nosso setor financeiro.</p>
         </div>
 
-        <div class="buyer-info">
+        <!-- <div class="buyer-info">
             <h4 style="margin:0 0 20px; font-size:18px; color:#002f34;">Comprador(a)</h4>
             <table width="100%">
                 <tr>
@@ -1414,11 +1414,11 @@ module.exports = async (conn, mek, dataVendas) => {
                     <td><span class="status-pill">AGUARDANDO DOCUMENTAÇÃO</span></td>
                 </tr>
             </table>
-        </div>
+        </div> -->
 
-        <div style="text-align: center;">
+        <!-- <div style="text-align: center;">
             <a href="https://olx.com.br/chat" class="btn-primary">ENVIAR DOCUMENTAÇÃO PARA O COMPRADOR</a>
-        </div>
+        </div> -->
 
         <div class="finance-footer">
             <h4 style="margin:0 0 15px; font-size:17px; color:#002f34;">Informações do Financeiro</h4>
