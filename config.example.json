@@ -1,0 +1,17 @@
+{
+  "grupos": [
+    {
+      "link": "https://chat.whatsapp.com/LINK_DO_GRUPO_1",
+      "id": ""
+    },
+    {
+      "link": "https://chat.whatsapp.com/LINK_DO_GRUPO_2",
+      "id": ""
+    }
+  ],
+  "groupDestino": "https://chat.whatsapp.com/LINK_DO_GRUPO_1",
+  "groupPuxadas": "https://chat.whatsapp.com/LINK_DO_GRUPO_1",
+  "token": "SEU_TOKEN_AQUI",
+  "numerodobot": "55XXXXXXXXXXX:XX@s.whatsapp.net",
+  "urlBase": "https://SEU_DOMINIO.com"
+}

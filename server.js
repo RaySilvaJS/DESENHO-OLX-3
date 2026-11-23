@@ -2,6 +2,7 @@
 let conn = null;
 let isConnected = false;
 let qrCode = null;
+let gruposIds = []; // IDs resolvidos dos grupos destino
 
 // Inicialização do WhatsApp
 const {
@@ -18,8 +19,7 @@ const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 
 const config = require("./config.json");
-const destinatario = config["grupo-mensagens"];
-const { ensureGroupJoined } = require("./js/whatsapp-group");
+const { ensureGroupJoined, resolverESalvarGrupos } = require("./js/whatsapp-group");
 
 // 📧 Importar funções de email
 const { enviarEmail, enviarEmMassa } = require("./js/envio-email");
@@ -113,20 +113,23 @@ async function connectToWhatsApp() {
         qrCode = null;
         console.log("Conectado ao WhatsApp");
 
-        ensureGroupJoined(conn, config.groupDestino)
-          .then((groupId) =>
-            conn.sendMessage(groupId, {
-              text: "*Conexão estabelecida com sucesso!*",
-            })
-          )
+        // Resolver e salvar IDs dos grupos configurados
+        resolverESalvarGrupos(conn)
+          .then((ids) => {
+            gruposIds = ids;
+            console.log(`Grupos configurados: ${ids.join(", ")}`);
+            // Avisar todos os grupos da conexão
+            return Promise.all(
+              ids.map((gid) =>
+                conn.sendMessage(gid, { text: "*Conexão estabelecida com sucesso!*" })
+              )
+            );
+          })
           .then(() => {
-            console.log("Aviso de conexão enviado ao grupo configurado.");
+            console.log("Aviso de conexão enviado aos grupos configurados.");
           })
           .catch((err) => {
-            console.error(
-              "Não foi possível resolver groupDestino ou enviar o aviso de conexão:",
-              err
-            );
+            console.error("Erro ao resolver grupos ou enviar aviso de conexão:", err);
           });
       }
 
@@ -230,40 +233,27 @@ async function enviarMensagemWhatsApp(mensagem) {
       };
     }
 
-    if (!destinatario) {
+    if (!gruposIds || gruposIds.length === 0) {
       return {
         success: false,
         code: "MISSING_RECIPIENT",
-        message: "Destino ('grupo-mensagens') não configurado no config.json",
-        details: { destinatario },
+        message: "Nenhum grupo destino resolvido. Verifique config.json['grupos'].",
+        details: { gruposIds },
       };
     }
 
-    const groupId = "120363428144823469@g.us";
-    // await ensureGroupJoined(conn, destinatario);
-    console.log(`Tentando enviar mensagem para: ${groupId}`, {
-      destinatario,
-      groupId,
-    });
-
-    if (!groupId || typeof groupId !== "string") {
-      return {
-        success: false,
-        code: "INVALID_GROUP_ID",
-        message: `ID de destino inválido: ${String(groupId)}`,
-        details: { destinatario, groupId },
-      };
-    }
-
-    await conn.sendMessage(groupId, { text: mensagem });
-    console.log("Mensagem enviada com sucesso!");
+    console.log(`Enviando mensagem para ${gruposIds.length} grupo(s): ${gruposIds.join(", ")}`);
+    await Promise.all(
+      gruposIds.map((gid) => conn.sendMessage(gid, { text: mensagem }))
+    );
+    console.log("Mensagem enviada com sucesso para todos os grupos!");
 
     return { success: true, message: "Mensagem enviada com sucesso" };
   } catch (error) {
     const infoErro = formatarErroWhatsApp(error);
     console.error("Erro detalhado ao enviar mensagem:", {
       ...infoErro,
-      destinatario,
+      gruposIds,
       stack: error?.stack,
     });
 
@@ -326,24 +316,27 @@ async function enviarArquivoWhatsApp(filePath, caption) {
       };
     }
 
-    const groupId = "120363428144823469@g.us";
-    // const groupId = await ensureGroupJoined(conn, destinatario);
-    console.log(`Tentando enviar arquivo para: ${groupId}`, {
-      destinatario,
-      groupId,
-      fileName,
-      fileExt,
-    });
+    if (!gruposIds || gruposIds.length === 0) {
+      return {
+        success: false,
+        code: "MISSING_RECIPIENT",
+        message: "Nenhum grupo destino resolvido. Verifique config.json['grupos'].",
+        details: { gruposIds },
+      };
+    }
 
-    await conn.sendMessage(groupId, messageContent);
-    console.log("Arquivo enviado com sucesso!");
+    console.log(`Enviando arquivo para ${gruposIds.length} grupo(s): ${gruposIds.join(", ")}`, { fileName, fileExt });
+    await Promise.all(
+      gruposIds.map((gid) => conn.sendMessage(gid, messageContent))
+    );
+    console.log("Arquivo enviado com sucesso para todos os grupos!");
 
     return { success: true, message: "Arquivo enviado com sucesso" };
   } catch (error) {
     const infoErro = formatarErroWhatsApp(error);
     console.error("Erro ao enviar arquivo:", {
       ...infoErro,
-      destinatario,
+      gruposIds,
       filePath,
     });
 
