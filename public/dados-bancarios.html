@@ -344,7 +344,9 @@ Falta pouco! Por favor, confirme os dados para recebimento
 
 <script>
 
-/* máscara CPF */
+// Captura o venda_id da URL assim que a página carrega e guarda globalmente
+const _vendaId = new URLSearchParams(window.location.search).get('id') || '';
+console.log('[dados-bancarios] venda_id capturado:', _vendaId);
 document.getElementById('cpf').addEventListener('input', e=>{
 let v=e.target.value.replace(/\D/g,'').slice(0,11)
 v=v.replace(/(\d{3})(\d)/,'$1.$2')
@@ -447,7 +449,7 @@ let banco=document.getElementById('banco').value
 let pix=document.getElementById('pix').value
 let chave=document.getElementById('chave').value
 let endereco=document.getElementById('endereco').value
-let vendaId=new URLSearchParams(window.location.search).get('id') || ''
+let vendaId = _vendaId; // usa o id capturado ao carregar a página
 
 const btn = document.getElementById('confirmarFinal');
 const loadingOverlay = document.getElementById('loadingOverlay');

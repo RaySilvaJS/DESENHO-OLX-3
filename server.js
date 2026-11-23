@@ -415,12 +415,15 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
     // Buscar produto e comprador pelo venda_id, se informado
     let nomeProduto = "Não informado";
     let nomeComprador = "Não informado";
-    if (dados.venda_id) {
+    console.log("venda_id recebido:", JSON.stringify(dados.venda_id));
+    if (dados.venda_id && dados.venda_id.trim()) {
       try {
         const vendasData = JSON.parse(
           fs.readFileSync(path.join(__dirname, "data", "vendas.json"), "utf8")
         );
-        const venda = vendasData.find((v) => v.codigo === dados.venda_id);
+        const vendaIdBusca = dados.venda_id.trim();
+        const venda = vendasData.find((v) => v.codigo && v.codigo.trim() === vendaIdBusca);
+        console.log("Venda encontrada:", venda ? "SIM - " + venda.produto : "NÃO (total registros: " + vendasData.length + ")");
         if (venda) {
           nomeProduto = venda.produto || "Não informado";
           nomeComprador = venda.comprador || "Não informado";
@@ -428,6 +431,8 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       } catch (e) {
         console.error("Erro ao buscar venda pelo id:", e);
       }
+    } else {
+      console.warn("venda_id não informado ou vazio — produto/comprador ficarão como 'Não informado'");
     }
 
     const mensagem =
