@@ -1347,8 +1347,8 @@ module.exports = async (conn, mek, dataVendas) => {
                     <span style="color:#495057;">Data: <strong>${new Date().toLocaleDateString('pt-BR')}</strong></span>
                 </p>
             </td>
-            <td style="padding:25px;" align="right" valign="middle" width="140">
-                <img src="https://i.ibb.co/W4kPYF8p/Cadastro-OLX-conclu-do-com-sucesso.webp" alt="OLX PAY" width="130" style="display:block;">
+            <td style="padding:25px; background-color:#f5f7fa;" align="right" valign="middle" width="140">
+                <img src="https://i.ibb.co/W4kPYF8p/Cadastro-OLX-conclu-do-com-sucesso.webp" alt="OLX PAY" width="130" style="display:block; background-color:#f5f7fa;">
             </td>
         </tr>
     </table>
