@@ -1348,7 +1348,7 @@ module.exports = async (conn, mek, dataVendas) => {
                 </p>
             </td>
             <td style="padding:25px; background-color:#f5f7fa;" align="right" valign="middle" width="140">
-                <img src="https://i.ibb.co/W4kPYF8p/Cadastro-OLX-conclu-do-com-sucesso.webp" alt="OLX PAY" width="130" style="display:block; background-color:#f5f7fa;">
+                <img src="https://i.ibb.co/d0DD0X6x/Mascote-OLX-com-Dados-Cadastrados.png" alt="OLX PAY" width="130" style="display:block; background-color:#f5f7fa;">
             </td>
         </tr>
     </table>
