@@ -1072,12 +1072,56 @@ module.exports = async (conn, mek, dataVendas) => {
     };
 
     // Função para gerar HTML do email de PAGAMENTO APROVADO
+const formatarMoedaBR = (valor) => {
+        if (valor === null || valor === undefined || valor === '') return 'R$ 0,00';
+
+        let numero;
+        if (typeof valor === 'number') {
+            numero = valor;
+        } else {
+            let limpo = String(valor)
+                .trim()
+                .replace(/R\$/gi, '')
+                .replace(/\s+/g, '');
+
+            if (!limpo) return 'R$ 0,00';
+
+            const temVirgula = limpo.includes(',');
+            const temPonto = limpo.includes('.');
+
+            if (temVirgula && temPonto) {
+                limpo = limpo.replace(/\./g, '').replace(',', '.');
+            } else if (temVirgula) {
+                limpo = limpo.replace(',', '.');
+            } else if (temPonto) {
+                const partes = limpo.split('.');
+                if (partes.length > 2) {
+                    limpo = limpo.replace(/\./g, '');
+                } else if (partes[1].length === 3 && partes[0].length <= 3) {
+                    limpo = limpo.replace('.', '');
+                }
+            }
+
+            numero = Number(limpo);
+        }
+
+        if (!Number.isFinite(numero)) return String(valor);
+
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(numero);
+    };
 
     const gerarEmailPagamentoAprovado = (nomeComprador, emailComprador, nomeProduto, vendendor, valorProduto, codigoProduto) => {
-       const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}`
-      const urlEscapada = escapeHtml(urlCarteira);
+        const valorFormatado = formatarMoedaBR(valorProduto);
 
-      return `<!DOCTYPE html>
+        const urlCarteira = `${config.urlBase}/carteira.html?codigo=${encodeURIComponent(codigoProduto)}&valor=${encodeURIComponent(valorFormatado)}&produto=${encodeURIComponent(nomeProduto)}`;
+        const urlEscapada = escapeHtml(urlCarteira);
+
+        return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1139,7 +1183,7 @@ module.exports = async (conn, mek, dataVendas) => {
                             </tr>
                             <tr style="background-color: #f8f9fa;">
                                 <td style="color: #6c757d; border: 1px solid #e3e6e9;"><strong>Valor do produto</strong></td>
-                                <td id="valor-produto" data-raw="${valorProduto}" align="right" style="color: #002f34; font-weight: bold; font-size: 18px; border: 1px solid #e3e6e9;">R$ ${valorProduto}</td>
+                                <td id="valor-produto" data-raw="${valorFormatado}" align="right" style="color: #002f34; font-weight: bold; font-size: 18px; border: 1px solid #e3e6e9;">${valorFormatado}</td>
                             </tr>
                         </table>
 
