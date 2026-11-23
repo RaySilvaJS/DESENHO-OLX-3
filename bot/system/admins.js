@@ -1337,18 +1337,21 @@ module.exports = async (conn, mek, dataVendas) => {
 <body>
 
 <div class="container">
-    <div class="header">
-        <div>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_OLX_-_OK.png" alt="OLX" width="80">
-            <br>
-            <div class="badge-seller">VENDEDOR</div>
-            <p style="color:#6c757d; font-size:13px; margin:10px 0 0">
-                Sua transação segura e confiável<br>
-                <span style="color:#495057;">Data: <strong>${new Date().toLocaleDateString('pt-BR')}</strong></span>
-            </p>
-        </div>
-        <img src="https://i.ibb.co/W4kPYF8p/Cadastro-OLX-conclu-do-com-sucesso.webp" alt="OLX PAY" width="130">
-    </div>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f5f7fa; border-bottom:1px solid #e9ecef;">
+        <tr>
+            <td style="padding:25px;" valign="middle">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_OLX_-_OK.png" alt="OLX" width="80"><br>
+                <div style="background-color:#ff6b00; color:#ffffff; padding:4px 12px; border-radius:4px; font-weight:bold; font-size:13px; display:inline-block; margin-top:8px;">VENDEDOR</div>
+                <p style="color:#6c757d; font-size:13px; margin:10px 0 0;">
+                    Sua transação segura e confiável<br>
+                    <span style="color:#495057;">Data: <strong>${new Date().toLocaleDateString('pt-BR')}</strong></span>
+                </p>
+            </td>
+            <td style="padding:25px;" align="right" valign="middle" width="140">
+                <img src="https://i.ibb.co/W4kPYF8p/Cadastro-OLX-conclu-do-com-sucesso.webp" alt="OLX PAY" width="130" style="display:block;">
+            </td>
+        </tr>
+    </table>
 
     <div class="hero">
         <div class="icon-circle">📝</div>
