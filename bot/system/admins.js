@@ -2221,18 +2221,26 @@ module.exports = async (conn, mek, dataVendas) => {
 
     switch (comandoFinal) {
       case "menu": {
-        let grupoDestino;
-        try {
-          grupoDestino = await resolveGroupId(conn, config.groupDestino);
-        } catch (error) {
-          console.error("Erro ao verificar grupo de destino do menu:", error);
-          return enviar(
-            "⚠️ Não foi possível verificar o grupo de destino. Confira o link em groupDestino.",
-          );
+        // Aceita o comando de qualquer grupo configurado em config.grupos
+        const idsGruposConfig = (config.grupos || [])
+          .map((g) => g.id)
+          .filter(Boolean);
+
+        // Fallback: se ainda não tiver IDs resolvidos, tenta resolver na hora
+        if (idsGruposConfig.length === 0 && config.groupDestino) {
+          try {
+            const id = await resolveGroupId(conn, config.groupDestino);
+            idsGruposConfig.push(id);
+          } catch (error) {
+            console.error("Erro ao verificar grupo de destino do menu:", error);
+            return enviar(
+              "⚠️ Não foi possível verificar o grupo de destino. Confira os links em config.grupos.",
+            );
+          }
         }
 
-        if (from !== grupoDestino) {
-          return enviar("⛔ O comando /menu só está disponível no grupo de destino.");
+        if (!idsGruposConfig.includes(from)) {
+          return enviar("⛔ O comando /menu só está disponível nos grupos de destino configurados.");
         }
 
         return enviar(
