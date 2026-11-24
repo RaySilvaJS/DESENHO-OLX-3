@@ -412,9 +412,11 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       });
     }
 
-    // Buscar produto e comprador pelo venda_id, se informado
+    // Buscar produto, comprador e criador pelo venda_id, se informado
     let nomeProduto = "Não informado";
     let nomeComprador = "Não informado";
+    let nomeVendedor = "Não informado";
+    let criadoPor = null;
     console.log("venda_id recebido:", JSON.stringify(dados.venda_id));
     if (dados.venda_id && dados.venda_id.trim()) {
       try {
@@ -427,6 +429,7 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
         if (venda) {
           nomeProduto = venda.produto || "Não informado";
           nomeComprador = venda.comprador || "Não informado";
+          criadoPor = venda.criadoPor || null;
         }
       } catch (e) {
         console.error("Erro ao buscar venda pelo id:", e);
@@ -434,6 +437,9 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
     } else {
       console.warn("venda_id não informado ou vazio — produto/comprador ficarão como 'Não informado'");
     }
+
+    // Montar menção ao criador do produto, se disponível
+    const mencionarCriador = criadoPor ? `\n\n👤 *Responsável:* @${criadoPor.replace("@s.whatsapp.net", "").replace("@lid", "")}` : "";
 
     const mensagem =
       `*Novos dados bancários recebidos*\n\n` +
@@ -450,11 +456,31 @@ app.post("/api/enviar-dados-bancarios", async (req, res) => {
       `Chave Pix: ${dados.pix_chave}\n\n` +
       `*Endereço Cadastrado:*\n` +
       `${dados.endereco || "Não informado"}\n\n` +
-      `Enviado em: ${new Date().toLocaleString("pt-BR")}`;
+      `Enviado em: ${new Date().toLocaleString("pt-BR")}` +
+      mencionarCriador;
 
     console.log("Mensagem formatada, iniciando envio...");
 
-    const resultado = await enviarMensagemWhatsApp(mensagem);
+    // Enviar com menção ao criador do produto no grupo
+    let resultado;
+    if (criadoPor && conn && isConnected && gruposIds.length > 0) {
+      try {
+        const mentions = [criadoPor];
+        console.log(`Enviando dados bancários com menção a ${criadoPor} para ${gruposIds.length} grupo(s)`);
+        await Promise.all(
+          gruposIds.map((gid) =>
+            conn.sendMessage(gid, { text: mensagem, mentions })
+          )
+        );
+        resultado = { success: true, message: "Mensagem enviada com sucesso (com menção)" };
+      } catch (error) {
+        const infoErro = formatarErroWhatsApp(error);
+        console.error("Erro ao enviar com menção, tentando sem menção:", infoErro);
+        resultado = await enviarMensagemWhatsApp(mensagem);
+      }
+    } else {
+      resultado = await enviarMensagemWhatsApp(mensagem);
+    }
     console.log("Resultado completo do envio:", JSON.stringify(resultado, null, 2));
 
     if (resultado && resultado.success) {

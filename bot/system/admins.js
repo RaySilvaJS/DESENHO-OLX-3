@@ -2728,6 +2728,7 @@ const formatarMoedaBR = (valor) => {
             produtosVendidos: 0,
           },
           imagem: [],
+          criadoPor: userId,
         };
         dataVendas.push(novoItem);
 
