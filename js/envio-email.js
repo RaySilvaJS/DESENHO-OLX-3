@@ -228,6 +228,8 @@ function marcarComoProcessada(messageId, dados) {
   }
 }
 
+let inicioMonitoramentoEm = new Date();
+
 /**
  * Buscar emails não lidos via IMAP (Google Workspace / Gmail)
  * Retorna array de objetos { de, assunto, corpo, messageId, data }
@@ -244,24 +246,41 @@ function buscarEmailsNaoLidos() {
     });
 
     const emails = [];
+    const parsePromises = [];
+    let settled = false;
+
+    const finishResolve = (result) => {
+      if (!settled) {
+        settled = true;
+        resolve(result);
+      }
+    };
+
+    const finishReject = (err) => {
+      if (!settled) {
+        settled = true;
+        reject(err);
+      }
+    };
 
     imap.once("ready", () => {
-      imap.openBox("INBOX", false, (err, box) => {
+      imap.openBox("INBOX", false, (err) => {
         if (err) {
           imap.end();
-          return reject(err);
+          return finishReject(err);
         }
 
-        // Buscar emails não lidos
-        imap.search(["UNSEEN"], (err, results) => {
+        // Buscar apenas emails não lidos de hoje em diante
+        const hoje = new Date();
+        imap.search(["UNSEEN", ["SINCE", hoje]], (err, results) => {
           if (err) {
             imap.end();
-            return reject(err);
+            return finishReject(err);
           }
 
           if (!results || results.length === 0) {
             imap.end();
-            return resolve([]);
+            return finishResolve([]);
           }
 
           const fetch = imap.fetch(results, { bodies: "", markSeen: true });
@@ -273,7 +292,7 @@ function buscarEmailsNaoLidos() {
                 buffer += chunk.toString("utf8");
               });
               stream.once("end", () => {
-                simpleParser(buffer)
+                const p = simpleParser(buffer)
                   .then((parsed) => {
                     emails.push({
                       messageId: parsed.messageId || `msg-${seqno}-${Date.now()}`,
@@ -288,6 +307,7 @@ function buscarEmailsNaoLidos() {
                   .catch((parseErr) => {
                     console.error(`Erro ao parsear email #${seqno}:`, parseErr.message);
                   });
+                parsePromises.push(p);
               });
             });
           });
@@ -296,7 +316,8 @@ function buscarEmailsNaoLidos() {
             console.error("Erro no fetch IMAP:", fetchErr);
           });
 
-          fetch.once("end", () => {
+          fetch.once("end", async () => {
+            await Promise.all(parsePromises);
             imap.end();
           });
         });
@@ -305,11 +326,12 @@ function buscarEmailsNaoLidos() {
 
     imap.once("error", (err) => {
       console.error("Erro IMAP:", err.message);
-      reject(err);
+      finishReject(err);
     });
 
-    imap.once("end", () => {
-      resolve(emails);
+    imap.once("end", async () => {
+      await Promise.all(parsePromises);
+      finishResolve(emails);
     });
 
     imap.connect();
@@ -378,6 +400,12 @@ async function monitorarRespostasEmail(conn, enviarParaGrupos) {
     console.log(`📬 ${emails.length} email(s) novo(s) encontrado(s)!`);
 
     for (const email of emails) {
+      // Ignorar emails recebidos antes do monitoramento iniciar
+      if (email.data && new Date(email.data) < inicioMonitoramentoEm) {
+        console.log(`⏭️ Email antigo (${email.assunto}) anterior ao início do monitoramento, ignorando...`);
+        continue;
+      }
+
       // Verificar se já foi processado
       if (jaFoiProcessada(email.messageId)) {
         console.log(`⏭️ Email ${email.messageId} já processado, pulando...`);
@@ -392,6 +420,7 @@ async function monitorarRespostasEmail(conn, enviarParaGrupos) {
         try {
           await enviarParaGrupos(mensagemWpp);
           console.log(`✅ Resposta de ${email.de} encaminhada para o WhatsApp`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } catch (error) {
           console.error(`❌ Erro ao encaminhar resposta para WhatsApp:`, error.message);
         }
@@ -420,6 +449,7 @@ async function monitorarRespostasEmail(conn, enviarParaGrupos) {
  * @param {number} intervaloMinutos - Intervalo entre verificações (padrão: 2 min)
  */
 function iniciarMonitoramento(conn, enviarParaGrupos, intervaloMinutos = 2) {
+  inicioMonitoramentoEm = new Date();
   console.log(`⏰ Monitoramento de respostas de email iniciado (a cada ${intervaloMinutos} min)`);
 
   // Primeira verificação após 10 segundos (dar tempo pro WhatsApp conectar)
