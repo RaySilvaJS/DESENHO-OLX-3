@@ -185,6 +185,8 @@ module.exports = {
   carregarDadosVendas,
   monitorarRespostasEmail,
   iniciarMonitoramento,
+  buscarEmailsNaoLidos,
+  formatarRespostaParaWhatsApp,
 };
 
 // Descomentar para testar
@@ -194,6 +196,9 @@ module.exports = {
 // ============================================
 // 📧 MONITORAMENTO DE RESPOSTAS POR IMAP
 // ============================================
+
+const Imap = require("imap");
+const { simpleParser } = require("mailparser");
 
 /**
  * Verificar se uma resposta já foi processada
@@ -224,89 +229,206 @@ function marcarComoProcessada(messageId, dados) {
 }
 
 /**
- * Extrair dados do corpo do email (CPF, Banco, Agência, Conta, PIX)
+ * Buscar emails não lidos via IMAP (Google Workspace / Gmail)
+ * Retorna array de objetos { de, assunto, corpo, messageId, data }
  */
-function extrairDadosEmail(corpo) {
-  const dados = {};
+function buscarEmailsNaoLidos() {
+  return new Promise((resolve, reject) => {
+    const imap = new Imap({
+      user: "siteolx@siteolx.com",
+      password: "wsko fobj ibpd kppo",
+      host: "imap.gmail.com",
+      port: 993,
+      tls: true,
+      tlsOptions: { rejectUnauthorized: false },
+    });
 
-  // Padrões de busca
-  const padroes = {
-    nomePessoa: /(?:nome\s*(?:completo)?[\s:]*([^\n]+))|(?:(?:^|\n)\s*([A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚA-Za-z\s]+)(?=\n|$))/i,
-    cpf: /(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/,
-    banco: /banco[\s:]*([A-Za-z0-9\s]+?)(?=\n|agência|$)/i,
-    agencia: /agência[\s:]*(\d{4,6}-?\d)/i,
-    conta: /conta[\s:]*(\d{8,12}(?:-\d)?)/i,
-    pix: /(?:chave\s+)?pix[\s:]*([a-zA-Z0-9@.\-_]+)/i,
-    telefone: /(\(?\d{2}\)?[\s-]?\d{4,5}[\s-]?\d{4})/,
-  };
+    const emails = [];
 
-  for (const [chave, padrao] of Object.entries(padroes)) {
-    const match = corpo.match(padrao);
-    if (match) {
-      dados[chave] = (match[1] || match[2] || "").trim();
-    }
+    imap.once("ready", () => {
+      imap.openBox("INBOX", false, (err, box) => {
+        if (err) {
+          imap.end();
+          return reject(err);
+        }
+
+        // Buscar emails não lidos
+        imap.search(["UNSEEN"], (err, results) => {
+          if (err) {
+            imap.end();
+            return reject(err);
+          }
+
+          if (!results || results.length === 0) {
+            imap.end();
+            return resolve([]);
+          }
+
+          const fetch = imap.fetch(results, { bodies: "", markSeen: true });
+
+          fetch.on("message", (msg, seqno) => {
+            msg.on("body", (stream) => {
+              let buffer = "";
+              stream.on("data", (chunk) => {
+                buffer += chunk.toString("utf8");
+              });
+              stream.once("end", () => {
+                simpleParser(buffer)
+                  .then((parsed) => {
+                    emails.push({
+                      messageId: parsed.messageId || `msg-${seqno}-${Date.now()}`,
+                      de: parsed.from?.text || "Desconhecido",
+                      deEmail: parsed.from?.value?.[0]?.address || "",
+                      assunto: parsed.subject || "(sem assunto)",
+                      corpo: parsed.text || "",
+                      corpoHtml: parsed.html || "",
+                      data: parsed.date || new Date(),
+                    });
+                  })
+                  .catch((parseErr) => {
+                    console.error(`Erro ao parsear email #${seqno}:`, parseErr.message);
+                  });
+              });
+            });
+          });
+
+          fetch.once("error", (fetchErr) => {
+            console.error("Erro no fetch IMAP:", fetchErr);
+          });
+
+          fetch.once("end", () => {
+            imap.end();
+          });
+        });
+      });
+    });
+
+    imap.once("error", (err) => {
+      console.error("Erro IMAP:", err.message);
+      reject(err);
+    });
+
+    imap.once("end", () => {
+      resolve(emails);
+    });
+
+    imap.connect();
+  });
+}
+
+/**
+ * Formatar resposta de email para mensagem do WhatsApp
+ */
+function formatarRespostaParaWhatsApp(email) {
+  // Limpar o corpo do email de lixo (assinaturas, citações anteriores)
+  let corpoLimpo = email.corpo || "";
+
+  // Remover citações de emails anteriores (linhas que começam com >)
+  corpoLimpo = corpoLimpo
+    .split("\n")
+    .filter((linha) => !linha.trim().startsWith(">"))
+    .join("\n");
+
+  // Remover blocos "On ... wrote:" ou "Em ... escreveu:"
+  corpoLimpo = corpoLimpo
+    .replace(/On .+ wrote:[\s\S]*/i, "")
+    .replace(/Em .+ escreveu:[\s\S]*/i, "")
+    .replace(/-----\s*Original Message\s*-----[\s\S]*/i, "")
+    .replace(/-----\s*Mensagem Original\s*-----[\s\S]*/i, "")
+    .replace(/De:[\s\S]*Enviada:[\s\S]*/i, "")
+    .replace(/From:[\s\S]*Sent:[\s\S]*/i, "")
+    .trim();
+
+  // Limitar tamanho
+  if (corpoLimpo.length > 1500) {
+    corpoLimpo = corpoLimpo.substring(0, 1500) + "...";
   }
 
-  return dados;
+  if (!corpoLimpo) {
+    corpoLimpo = "(mensagem vazia ou somente imagens/anexos)";
+  }
+
+  const dataFormatada = new Date(email.data).toLocaleString("pt-BR");
+
+  return (
+    `*📩 RESPOSTA DE EMAIL RECEBIDA*\n\n` +
+    `*De:* ${email.de}\n` +
+    `*Assunto:* ${email.assunto}\n` +
+    `*Data:* ${dataFormatada}\n\n` +
+    `*Mensagem:*\n${corpoLimpo}`
+  );
 }
 
 /**
- * Traduzir nomes de campos para português
+ * Monitorar respostas de emails via IMAP e encaminhar para WhatsApp
+ * @param {object} conn - Conexão do WhatsApp (Baileys)
+ * @param {function} enviarParaGrupos - Função para enviar mensagem aos grupos
  */
-function traduzirCampo(campo) {
-  const traducoes = {
-    nomePessoa: "Nome",
-    cpf: "CPF",
-    banco: "Banco",
-    agencia: "Agência",
-    conta: "Conta",
-    pix: "Chave PIX",
-    telefone: "Telefone",
-  };
-  return traducoes[campo] || campo;
-}
-
-/**
- * Monitorar respostas de emails (modo simplificado)
- * Você pode registrar respostas manualmente via WhatsApp
- * Ou configurar webhooks do Gmail
- */
-async function monitorarRespostasEmail(conn) {
+async function monitorarRespostasEmail(conn, enviarParaGrupos) {
   try {
-    const respostasPath = arquivoRespostasProcessadas;
-    
-    if (!fs.existsSync(respostasPath)) {
+    console.log("📧 Verificando novas respostas de email...");
+
+    const emails = await buscarEmailsNaoLidos();
+
+    if (emails.length === 0) {
       console.log("✓ Nenhuma resposta nova de email");
       return true;
     }
 
-    const respostas = JSON.parse(fs.readFileSync(respostasPath, "utf8"));
-    const totalRespostas = Object.keys(respostas).length;
+    console.log(`📬 ${emails.length} email(s) novo(s) encontrado(s)!`);
 
-    if (totalRespostas === 0) {
-      console.log("✓ Sistema pronto para receber respostas");
-    } else {
-      console.log(`✓ Total de respostas processadas: ${totalRespostas}`);
+    for (const email of emails) {
+      // Verificar se já foi processado
+      if (jaFoiProcessada(email.messageId)) {
+        console.log(`⏭️ Email ${email.messageId} já processado, pulando...`);
+        continue;
+      }
+
+      // Formatar mensagem para WhatsApp
+      const mensagemWpp = formatarRespostaParaWhatsApp(email);
+
+      // Enviar para os grupos do WhatsApp
+      if (enviarParaGrupos) {
+        try {
+          await enviarParaGrupos(mensagemWpp);
+          console.log(`✅ Resposta de ${email.de} encaminhada para o WhatsApp`);
+        } catch (error) {
+          console.error(`❌ Erro ao encaminhar resposta para WhatsApp:`, error.message);
+        }
+      }
+
+      // Marcar como processada
+      marcarComoProcessada(email.messageId, {
+        de: email.de,
+        deEmail: email.deEmail,
+        assunto: email.assunto,
+        data: email.data,
+      });
     }
-    
+
     return true;
   } catch (error) {
-    console.error("❌ Erro ao verificar respostas:", error.message);
+    console.error("❌ Erro ao monitorar respostas de email:", error.message);
     return false;
   }
 }
 
 /**
- * Iniciar monitoramento automático
+ * Iniciar monitoramento automático de respostas
+ * @param {object} conn - Conexão do WhatsApp (Baileys)
+ * @param {function} enviarParaGrupos - Função para enviar mensagem aos grupos
+ * @param {number} intervaloMinutos - Intervalo entre verificações (padrão: 2 min)
  */
-function iniciarMonitoramento(conn, intervaloMinutos = 5) {
-  console.log(`⏰ Iniciando monitoramento de respostas de email (a cada ${intervaloMinutos} minutos)`);
+function iniciarMonitoramento(conn, enviarParaGrupos, intervaloMinutos = 2) {
+  console.log(`⏰ Monitoramento de respostas de email iniciado (a cada ${intervaloMinutos} min)`);
 
-  // Verificar imediatamente
-  monitorarRespostasEmail(conn);
+  // Primeira verificação após 10 segundos (dar tempo pro WhatsApp conectar)
+  setTimeout(() => {
+    monitorarRespostasEmail(conn, enviarParaGrupos);
+  }, 10000);
 
   // Verificar periodicamente
   setInterval(() => {
-    monitorarRespostasEmail(conn);
+    monitorarRespostasEmail(conn, enviarParaGrupos);
   }, intervaloMinutos * 60 * 1000);
 }

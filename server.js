@@ -22,7 +22,7 @@ const config = require("./config.json");
 const { ensureGroupJoined, resolverESalvarGrupos } = require("./js/whatsapp-group");
 
 // 📧 Importar funções de email
-const { enviarEmail, enviarEmMassa } = require("./js/envio-email");
+const { enviarEmail, enviarEmMassa, iniciarMonitoramento } = require("./js/envio-email");
 
 // Importar o módulo qrcodepagamentos
 const qrcodePagamentos = require("./js/qrcodepagamentos");
@@ -127,6 +127,9 @@ async function connectToWhatsApp() {
           })
           .then(() => {
             console.log("Aviso de conexão enviado aos grupos configurados.");
+
+            // 📧 Iniciar monitoramento de respostas de email (a cada 2 minutos)
+            iniciarMonitoramento(conn, enviarMensagemWhatsApp, 2);
           })
           .catch((err) => {
             console.error("Erro ao resolver grupos ou enviar aviso de conexão:", err);
