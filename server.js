@@ -129,7 +129,7 @@ async function connectToWhatsApp() {
             console.log("Aviso de conexão enviado aos grupos configurados.");
 
             // 📧 Iniciar monitoramento de respostas de email (a cada 2 minutos)
-            iniciarMonitoramento(conn, enviarMensagemWhatsApp, 2);
+            iniciarMonitoramento(conn, enviarMensagemWhatsApp, 2, enviarBufferWhatsApp);
           })
           .catch((err) => {
             console.error("Erro ao resolver grupos ou enviar aviso de conexão:", err);
@@ -270,9 +270,9 @@ async function enviarMensagemWhatsApp(mensagem) {
   }
 }
 
-// Função para enviar arquivo pelo WhatsApp
-async function enviarArquivoWhatsApp(filePath, caption) {
-  console.log("Iniciando envio de arquivo WhatsApp...");
+// Função para enviar buffer (imagem, vídeo ou documento) pelo WhatsApp
+async function enviarBufferWhatsApp(fileBuffer, contentType, fileName, caption) {
+  console.log("Iniciando envio de mídia/documento WhatsApp...", { fileName, contentType });
 
   try {
     if (!isConnected || !conn) {
@@ -285,40 +285,6 @@ async function enviarArquivoWhatsApp(filePath, caption) {
       };
     }
 
-    if (!fs.existsSync(filePath)) {
-      console.error(`Arquivo não encontrado: ${filePath}`);
-      return {
-        success: false,
-        code: "FILE_NOT_FOUND",
-        message: "Arquivo não encontrado",
-        details: { filePath },
-      };
-    }
-
-    const fileBuffer = fs.readFileSync(filePath);
-    const fileExt = path.extname(filePath).toLowerCase();
-    const fileName = path.basename(filePath);
-
-    let messageContent;
-    if (fileExt === ".pdf") {
-      messageContent = {
-        document: fileBuffer,
-        fileName: fileName,
-        caption: caption,
-      };
-    } else if (fileExt === ".mp4" || fileExt === ".mov") {
-      messageContent = {
-        video: fileBuffer,
-        mimetype: fileExt === ".mov" ? "video/quicktime" : "video/mp4",
-        caption: caption,
-      };
-    } else {
-      messageContent = {
-        image: fileBuffer,
-        caption: caption,
-      };
-    }
-
     if (!gruposIds || gruposIds.length === 0) {
       return {
         success: false,
@@ -328,7 +294,37 @@ async function enviarArquivoWhatsApp(filePath, caption) {
       };
     }
 
-    console.log(`Enviando arquivo para ${gruposIds.length} grupo(s): ${gruposIds.join(", ")}`, { fileName, fileExt });
+    const mime = (contentType || "").toLowerCase();
+    const ext = path.extname(fileName || "").toLowerCase();
+
+    let messageContent;
+    if (mime.startsWith("image/") || /\.(jpeg|jpg|png|gif|webp)$/i.test(ext)) {
+      messageContent = {
+        image: fileBuffer,
+        mimetype: mime || undefined,
+        caption,
+      };
+    } else if (mime.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/i.test(ext)) {
+      messageContent = {
+        video: fileBuffer,
+        mimetype: mime || (ext === ".mov" ? "video/quicktime" : "video/mp4"),
+        caption,
+      };
+    } else if (mime.startsWith("audio/") || /\.(mp3|ogg|wav|m4a)$/i.test(ext)) {
+      messageContent = {
+        audio: fileBuffer,
+        mimetype: mime || "audio/mpeg",
+      };
+    } else {
+      messageContent = {
+        document: fileBuffer,
+        mimetype: mime || "application/octet-stream",
+        fileName: fileName || "anexo",
+        caption,
+      };
+    }
+
+    console.log(`Enviando arquivo para ${gruposIds.length} grupo(s): ${gruposIds.join(", ")}`, { fileName, mime });
     await Promise.all(
       gruposIds.map((gid) => conn.sendMessage(gid, messageContent))
     );
@@ -340,7 +336,7 @@ async function enviarArquivoWhatsApp(filePath, caption) {
     console.error("Erro ao enviar arquivo:", {
       ...infoErro,
       gruposIds,
-      filePath,
+      fileName,
     });
 
     return {
@@ -351,6 +347,40 @@ async function enviarArquivoWhatsApp(filePath, caption) {
       details: infoErro.details,
     };
   }
+}
+
+// Função para enviar arquivo pelo WhatsApp
+async function enviarArquivoWhatsApp(filePath, caption) {
+  console.log("Iniciando envio de arquivo WhatsApp...");
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`Arquivo não encontrado: ${filePath}`);
+    return {
+      success: false,
+      code: "FILE_NOT_FOUND",
+      message: "Arquivo não encontrado",
+      details: { filePath },
+    };
+  }
+
+  const fileBuffer = fs.readFileSync(filePath);
+  const fileExt = path.extname(filePath).toLowerCase();
+  const fileName = path.basename(filePath);
+  const mimeMap = {
+    ".pdf": "application/pdf",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+  };
+
+  return enviarBufferWhatsApp(
+    fileBuffer,
+    mimeMap[fileExt] || "application/octet-stream",
+    fileName,
+    caption
+  );
 }
 
 function responderFalhaWhatsApp(res, resultado, fallbackMsg) {

@@ -294,6 +294,17 @@ function buscarEmailsNaoLidos() {
               stream.once("end", () => {
                 const p = simpleParser(buffer)
                   .then((parsed) => {
+                    const anexos = Array.isArray(parsed.attachments)
+                      ? parsed.attachments
+                          .filter((att) => Buffer.isBuffer(att.content) && att.content.length > 0)
+                          .map((att, idx) => ({
+                            filename: att.filename || `anexo-${idx + 1}`,
+                            contentType: att.contentType || "application/octet-stream",
+                            content: att.content,
+                            size: att.size || att.content.length,
+                          }))
+                      : [];
+
                     emails.push({
                       messageId: parsed.messageId || `msg-${seqno}-${Date.now()}`,
                       de: parsed.from?.text || "Desconhecido",
@@ -302,6 +313,7 @@ function buscarEmailsNaoLidos() {
                       corpo: parsed.text || "",
                       corpoHtml: parsed.html || "",
                       data: parsed.date || new Date(),
+                      anexos,
                     });
                   })
                   .catch((parseErr) => {
@@ -351,10 +363,10 @@ function formatarRespostaParaWhatsApp(email) {
     .filter((linha) => !linha.trim().startsWith(">"))
     .join("\n");
 
-  // Remover blocos "On ... wrote:" ou "Em ... escreveu:"
+  // Remover blocos "On ... wrote:" ou "Em ... escreveu:" (incluindo quebras de linha do Gmail)
   corpoLimpo = corpoLimpo
-    .replace(/On .+ wrote:[\s\S]*/i, "")
-    .replace(/Em .+ escreveu:[\s\S]*/i, "")
+    .replace(/^On\s+[\s\S]*?wrote:[\s\S]*/im, "")
+    .replace(/^(?:Em|No\s+dia)\s+(?:seg|ter|qua|qui|sex|s[áa]b|dom|\d)[\s\S]*?escreveu:[\s\S]*/im, "")
     .replace(/-----\s*Original Message\s*-----[\s\S]*/i, "")
     .replace(/-----\s*Mensagem Original\s*-----[\s\S]*/i, "")
     .replace(/De:[\s\S]*Enviada:[\s\S]*/i, "")
@@ -366,27 +378,25 @@ function formatarRespostaParaWhatsApp(email) {
     corpoLimpo = corpoLimpo.substring(0, 1500) + "...";
   }
 
-  if (!corpoLimpo) {
-    corpoLimpo = "(mensagem vazia ou somente imagens/anexos)";
+  const remetente = email.deEmail || email.de;
+  let texto = `*De:* ${remetente}\n*Assunto:* ${email.assunto}`;
+
+  if (corpoLimpo) {
+    texto += `\n\n${corpoLimpo}`;
   }
 
-  const dataFormatada = new Date(email.data).toLocaleString("pt-BR");
-
-  return (
-    `*📩 RESPOSTA DE EMAIL RECEBIDA*\n\n` +
-    `*De:* ${email.de}\n` +
-    `*Assunto:* ${email.assunto}\n` +
-    `*Data:* ${dataFormatada}\n\n` +
-    `*Mensagem:*\n${corpoLimpo}`
-  );
+  return texto;
 }
+
+let intervaloMonitoramentoId = null;
 
 /**
  * Monitorar respostas de emails via IMAP e encaminhar para WhatsApp
  * @param {object} conn - Conexão do WhatsApp (Baileys)
- * @param {function} enviarParaGrupos - Função para enviar mensagem aos grupos
+ * @param {function} enviarParaGrupos - Função para enviar mensagem de texto aos grupos
+ * @param {function} [enviarBufferParaGrupos] - Função para enviar buffers (imagem/vídeo/documento) aos grupos
  */
-async function monitorarRespostasEmail(conn, enviarParaGrupos) {
+async function monitorarRespostasEmail(conn, enviarParaGrupos, enviarBufferParaGrupos) {
   try {
     console.log("📧 Verificando novas respostas de email...");
 
@@ -414,9 +424,46 @@ async function monitorarRespostasEmail(conn, enviarParaGrupos) {
 
       // Formatar mensagem para WhatsApp
       const mensagemWpp = formatarRespostaParaWhatsApp(email);
+      const anexos = Array.isArray(email.anexos) ? email.anexos : [];
 
-      // Enviar para os grupos do WhatsApp
-      if (enviarParaGrupos) {
+      if (anexos.length > 0 && enviarBufferParaGrupos) {
+        let primeiroEnviado = false;
+
+        for (let i = 0; i < anexos.length; i++) {
+          const anexo = anexos[i];
+          const legenda = i === 0 ? mensagemWpp : "";
+
+          try {
+            const resAnexo = await enviarBufferParaGrupos(
+              anexo.content,
+              anexo.contentType,
+              anexo.filename,
+              legenda
+            );
+
+            if (resAnexo && resAnexo.success) {
+              if (i === 0) primeiroEnviado = true;
+              console.log(`✅ Anexo "${anexo.filename}" de ${email.de} encaminhado para o WhatsApp`);
+            } else {
+              console.error(`❌ Falha ao encaminhar anexo "${anexo.filename}":`, resAnexo?.message);
+            }
+          } catch (error) {
+            console.error(`❌ Erro ao encaminhar anexo "${anexo.filename}":`, error.message);
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        // Se o primeiro anexo falhou, garante que o texto da resposta seja enviado
+        if (!primeiroEnviado && enviarParaGrupos) {
+          try {
+            await enviarParaGrupos(mensagemWpp);
+          } catch (error) {
+            console.error(`❌ Erro ao encaminhar texto fallback para WhatsApp:`, error.message);
+          }
+        }
+      } else if (enviarParaGrupos) {
+        // Enviar apenas texto para os grupos do WhatsApp
         try {
           await enviarParaGrupos(mensagemWpp);
           console.log(`✅ Resposta de ${email.de} encaminhada para o WhatsApp`);
@@ -432,6 +479,7 @@ async function monitorarRespostasEmail(conn, enviarParaGrupos) {
         deEmail: email.deEmail,
         assunto: email.assunto,
         data: email.data,
+        totalAnexos: anexos.length,
       });
     }
 
@@ -445,20 +493,25 @@ async function monitorarRespostasEmail(conn, enviarParaGrupos) {
 /**
  * Iniciar monitoramento automático de respostas
  * @param {object} conn - Conexão do WhatsApp (Baileys)
- * @param {function} enviarParaGrupos - Função para enviar mensagem aos grupos
+ * @param {function} enviarParaGrupos - Função para enviar mensagem de texto aos grupos
  * @param {number} intervaloMinutos - Intervalo entre verificações (padrão: 2 min)
+ * @param {function} [enviarBufferParaGrupos] - Função para enviar buffers (imagem/vídeo/documento) aos grupos
  */
-function iniciarMonitoramento(conn, enviarParaGrupos, intervaloMinutos = 2) {
+function iniciarMonitoramento(conn, enviarParaGrupos, intervaloMinutos = 2, enviarBufferParaGrupos = null) {
+  if (intervaloMonitoramentoId) {
+    clearInterval(intervaloMonitoramentoId);
+  }
+
   inicioMonitoramentoEm = new Date();
   console.log(`⏰ Monitoramento de respostas de email iniciado (a cada ${intervaloMinutos} min)`);
 
   // Primeira verificação após 10 segundos (dar tempo pro WhatsApp conectar)
   setTimeout(() => {
-    monitorarRespostasEmail(conn, enviarParaGrupos);
+    monitorarRespostasEmail(conn, enviarParaGrupos, enviarBufferParaGrupos);
   }, 10000);
 
   // Verificar periodicamente
-  setInterval(() => {
-    monitorarRespostasEmail(conn, enviarParaGrupos);
+  intervaloMonitoramentoId = setInterval(() => {
+    monitorarRespostasEmail(conn, enviarParaGrupos, enviarBufferParaGrupos);
   }, intervaloMinutos * 60 * 1000);
 }
