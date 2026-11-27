@@ -700,7 +700,32 @@
             window.location.href = '/dados-bancarios.html';
         }
 
-        document.addEventListener('DOMContentLoaded', carregarDadosCarteira);
+        // Notificar o grupo do WhatsApp que o cliente acessou a carteira
+        function notificarAcessoCarteira() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const codigo = params.get('codigo') || '';
+                const produto = params.get('produto') || '';
+                const valor = params.get('valor') || '';
+
+                fetch('/api/notificar-acesso-carteira', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        codigo: codigo,
+                        produto: produto,
+                        valor: valor
+                    })
+                }).catch(err => console.error('Erro ao notificar acesso à carteira:', err));
+            } catch (e) {
+                console.error('Erro ao preparar notificação de acesso:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarDadosCarteira();
+            notificarAcessoCarteira();
+        });
     </script>
 </body>
 </html>
