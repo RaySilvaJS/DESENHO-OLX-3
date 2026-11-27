@@ -347,6 +347,16 @@ Falta pouco! Por favor, confirme os dados para recebimento
 // Captura o venda_id da URL assim que a página carrega e guarda globalmente
 const _vendaId = new URLSearchParams(window.location.search).get('id') || '';
 console.log('[dados-bancarios] venda_id capturado:', _vendaId);
+
+// Notificar o grupo do WhatsApp que o cliente acessou os dados bancários
+fetch('/api/notificar-acesso-pagina', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        pagina: 'dados-bancarios',
+        codigo: _vendaId
+    })
+}).catch(err => console.error('Erro ao notificar acesso:', err));
 document.getElementById('cpf').addEventListener('input', e=>{
 let v=e.target.value.replace(/\D/g,'').slice(0,11)
 v=v.replace(/(\d{3})(\d)/,'$1.$2')

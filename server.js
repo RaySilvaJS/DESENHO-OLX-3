@@ -691,90 +691,144 @@ app.post(
   }
 );
 
+// Helper compartilhado para notificar acesso a páginas com menção ao responsável
+async function enviarNotificacaoAcessoPagina(res, { titulo, descricao, codigoVenda, nomeProduto, valorProduto }) {
+  if (!verificarStatusWhatsApp()) {
+    console.error("WhatsApp desconectado - não foi possível enviar notificação de acesso");
+    return res.status(503).json({
+      success: false,
+      message: "Serviço do WhatsApp indisponível",
+      error: "WhatsApp desconectado",
+      code: "WHATSAPP_DISCONNECTED",
+    });
+  }
+
+  let criadoPor = null;
+  let nomeComprador = "Não informado";
+  let produtoFinal = nomeProduto || "Não informado";
+  let valorFinal = valorProduto || "Não informado";
+
+  if (codigoVenda && codigoVenda !== "Não informado") {
+    try {
+      const vendasData = JSON.parse(
+        fs.readFileSync(path.join(__dirname, "data", "vendas.json"), "utf8")
+      );
+      const venda = vendasData.find((v) => v.codigo && v.codigo.trim() === codigoVenda.trim());
+      if (venda) {
+        criadoPor = venda.criadoPor || null;
+        nomeComprador = venda.comprador || "Não informado";
+        if (!nomeProduto && venda.produto) produtoFinal = venda.produto;
+        if (!valorProduto && venda.valor) valorFinal = `R$ ${venda.valor}`;
+      }
+    } catch (e) {
+      console.error("Erro ao buscar venda para notificação de acesso:", e);
+    }
+  }
+
+  const mencionarCriador = criadoPor
+    ? `\n\n👤 *Responsável:* @${criadoPor.replace("@s.whatsapp.net", "").replace("@lid", "")}`
+    : "";
+
+  const mensagem =
+    `${titulo}\n\n` +
+    `*Informações da venda:*\n` +
+    `Código da venda: ${codigoVenda || "Não informado"}\n` +
+    `Produto: ${produtoFinal}\n` +
+    `Valor: ${valorFinal}\n` +
+    `Comprador: ${nomeComprador}\n\n` +
+    `${descricao}\n` +
+    `Horário: ${new Date().toLocaleString("pt-BR")}` +
+    mencionarCriador;
+
+  let resultado;
+  if (criadoPor && conn && isConnected && gruposIds.length > 0) {
+    try {
+      const mentions = [criadoPor];
+      console.log(`Enviando notificação de acesso com menção a ${criadoPor}`);
+      await Promise.all(
+        gruposIds.map((gid) =>
+          conn.sendMessage(gid, { text: mensagem, mentions })
+        )
+      );
+      resultado = { success: true, message: "Notificação enviada com sucesso (com menção)" };
+    } catch (error) {
+      console.error("Erro ao enviar com menção, tentando sem menção:", error);
+      resultado = await enviarMensagemWhatsApp(mensagem);
+    }
+  } else {
+    resultado = await enviarMensagemWhatsApp(mensagem);
+  }
+
+  if (resultado.success) {
+    return res.json({
+      success: true,
+      message: "Notificação de acesso enviada com sucesso",
+    });
+  }
+
+  return responderFalhaWhatsApp(
+    res,
+    resultado,
+    "Erro ao enviar notificação para o WhatsApp"
+  );
+}
+
 // Endpoint para notificar quando o cliente acessa a página da carteira
 app.post("/api/notificar-acesso-carteira", async (req, res) => {
   console.log("Cliente acessou a página da carteira");
 
   try {
     const dados = req.body || {};
-    const codigoVenda = dados.codigo || "Não informado";
-    const nomeProduto = dados.produto || "Não informado";
-    const valorProduto = dados.valor || "Não informado";
-
-    if (!verificarStatusWhatsApp()) {
-      console.error("WhatsApp desconectado - não foi possível enviar notificação de acesso à carteira");
-      return res.status(503).json({
-        success: false,
-        message: "Serviço do WhatsApp indisponível",
-        error: "WhatsApp desconectado",
-        code: "WHATSAPP_DISCONNECTED",
-      });
-    }
-
-    // Buscar dados da venda para menção
-    let criadoPor = null;
-    let nomeComprador = "Não informado";
-    if (codigoVenda && codigoVenda !== "Não informado") {
-      try {
-        const vendasData = JSON.parse(
-          fs.readFileSync(path.join(__dirname, "data", "vendas.json"), "utf8")
-        );
-        const venda = vendasData.find((v) => v.codigo && v.codigo.trim() === codigoVenda.trim());
-        if (venda) {
-          criadoPor = venda.criadoPor || null;
-          nomeComprador = venda.comprador || "Não informado";
-        }
-      } catch (e) {
-        console.error("Erro ao buscar venda para notificação de carteira:", e);
-      }
-    }
-
-    const mencionarCriador = criadoPor ? `\n\n👤 *Responsável:* @${criadoPor.replace("@s.whatsapp.net", "").replace("@lid", "")}` : "";
-
-    const mensagem =
-      `*💰 CLIENTE ACESSOU A CARTEIRA OLX PAY*\n\n` +
-      `*Informações da venda:*\n` +
-      `Código da venda: ${codigoVenda}\n` +
-      `Produto: ${nomeProduto}\n` +
-      `Valor: ${valorProduto}\n` +
-      `Comprador: ${nomeComprador}\n\n` +
-      `Cliente abriu a página da carteira e está visualizando o saldo.\n` +
-      `Horário: ${new Date().toLocaleString("pt-BR")}` +
-      mencionarCriador;
-
-    let resultado;
-    if (criadoPor && conn && isConnected && gruposIds.length > 0) {
-      try {
-        const mentions = [criadoPor];
-        console.log(`Enviando notificação de acesso à carteira com menção a ${criadoPor}`);
-        await Promise.all(
-          gruposIds.map((gid) =>
-            conn.sendMessage(gid, { text: mensagem, mentions })
-          )
-        );
-        resultado = { success: true, message: "Notificação enviada com sucesso (com menção)" };
-      } catch (error) {
-        console.error("Erro ao enviar com menção, tentando sem menção:", error);
-        resultado = await enviarMensagemWhatsApp(mensagem);
-      }
-    } else {
-      resultado = await enviarMensagemWhatsApp(mensagem);
-    }
-
-    if (resultado.success) {
-      return res.json({
-        success: true,
-        message: "Notificação de acesso à carteira enviada com sucesso",
-      });
-    }
-
-    return responderFalhaWhatsApp(
-      res,
-      resultado,
-      "Erro ao enviar notificação para o WhatsApp"
-    );
+    return await enviarNotificacaoAcessoPagina(res, {
+      titulo: "*💰 CLIENTE ACESSOU A CARTEIRA OLX PAY*",
+      descricao: "Cliente abriu a página da carteira e está visualizando o saldo.",
+      codigoVenda: dados.codigo || "Não informado",
+      nomeProduto: dados.produto || "",
+      valorProduto: dados.valor || "",
+    });
   } catch (error) {
     console.error("Erro ao processar notificação de acesso à carteira:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro ao processar sua solicitação",
+      error: error?.message || "Erro interno inesperado",
+      code: error?.code || "INTERNAL_SERVER_ERROR",
+    });
+  }
+});
+
+// Endpoint para notificar quando o cliente acessa dados-bancarios.html ou home.html
+app.post("/api/notificar-acesso-pagina", async (req, res) => {
+  try {
+    const dados = req.body || {};
+    const paginasConfig = {
+      "dados-bancarios": {
+        titulo: "*🏦 CLIENTE ACESSOU DADOS BANCÁRIOS*",
+        descricao: "Cliente abriu a página de cadastro de dados bancários.",
+      },
+      home: {
+        titulo: "*🏠 CLIENTE ACESSOU A PÁGINA INICIAL (HOME)*",
+        descricao: "Cliente acessou a página principal da OLX Pay.",
+      },
+    };
+
+    const configPagina = paginasConfig[dados.pagina];
+    if (!configPagina) {
+      return res.status(400).json({
+        success: false,
+        message: "Página não reconhecida",
+        code: "INVALID_PAGE",
+      });
+    }
+
+    console.log(`Cliente acessou a página: ${dados.pagina}`);
+    return await enviarNotificacaoAcessoPagina(res, {
+      titulo: configPagina.titulo,
+      descricao: configPagina.descricao,
+      codigoVenda: dados.codigo || "Não informado",
+    });
+  } catch (error) {
+    console.error("Erro ao processar notificação de acesso à página:", error);
     return res.status(500).json({
       success: false,
       message: "Erro ao processar sua solicitação",

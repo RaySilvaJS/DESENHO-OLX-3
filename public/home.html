@@ -256,6 +256,17 @@
                 // Ocultar o id da URL sem recarregar a página
                 window.history.replaceState(null, '', window.location.pathname);
             }
+
+            // Notificar o grupo do WhatsApp que o cliente acessou a home
+            const idParaNotificar = vendaId || localStorage.getItem('vendaId') || '';
+            fetch('/api/notificar-acesso-pagina', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pagina: 'home',
+                    codigo: idParaNotificar
+                })
+            }).catch(err => console.error('Erro ao notificar acesso:', err));
         });
 
         function mostrarLoading(e) {
